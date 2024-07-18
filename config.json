@@ -9,9 +9,6 @@
     "google_conf": {
         "pause": 10
     },
-    "apple_procast_conf": {
-        
-    },
     "lark_config":{
         "webhook": "https://open.feishu.cn/open-apis/bot/v2/hook/34755f1e-5fc7-46c9-9fee-177317a581ee"
     }
