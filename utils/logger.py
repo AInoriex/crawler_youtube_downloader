@@ -1,13 +1,18 @@
+# -*- coding: UTF8 -*-
+# from utils.tool import load_cfg
+# cfg = load_cfg("config.json")
+# from config import Config
+# config = Config()
+# config.load_cfg("conf/config.json")
+# cfg = config.cfg
+
 import logging
 import time
 import os
-from utils.tool import load_cfg
 
 def init_logger(name):
-    cfg = load_cfg("config.json")
-
     logger = logging.getLogger(name)
-    if cfg["common"]["debug_mode"]:
+    if os.getenv('DEBUG') == 'True':
         logger.setLevel(logging.DEBUG)
     else:
         logger.setLevel(logging.INFO)
@@ -16,7 +21,8 @@ def init_logger(name):
     log_date = time.strftime("%Y-%m-%d", time.localtime())
     log_time = time.strftime("%Y%m%d%H%M%S", time.localtime())
 
-    log_dir = os.path.join(cfg["common"]["log_path"], log_date) 
+    # log_dir = os.path.join(cfg["common"]["log_path"], log_date)
+    log_dir = os.path.join(os.getenv('LOG_PATH'), log_date)
     os.makedirs(log_dir, exist_ok=True)
 
     formatter = logging.Formatter(

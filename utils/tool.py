@@ -1,6 +1,5 @@
 import json
 import os
-import io
 import os
 import shutil
 # import scipy
