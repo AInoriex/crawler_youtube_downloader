@@ -1,4 +1,4 @@
-## 油管下载器
+# 油管下载器
 
 ## Description
 
@@ -14,7 +14,25 @@
    pip install -r requirements.txt
    ```
 
-2. 创建 `.env` 配置文件在根目录
+2. 创建 `.env` 配置文件在根目录，样例如下
+
+   ```
+   # .env
+   
+   # COMMON
+   DEBUG=True
+   LOG_PATH=logs
+   DOWNLOAD_PATH=download
+   TMP_FOLDER_PATH=temp
+   HTTP_PROXY=
+   
+   # DATABASE
+   DATABASE_HOST=
+   DATABASE_PORT=3306
+   DATABASE_USER=
+   DATABASE_PASS=
+   DATABASE_DB=crawler
+   ```
 
 3. 运行程序
 
