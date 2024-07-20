@@ -4,7 +4,8 @@
 # config = Config()
 # config.load_cfg("conf/config.json")
 # cfg = config.cfg
-
+from dotenv import load_dotenv
+load_dotenv()
 from database import handler as dao
 
 def main():

@@ -158,4 +158,5 @@ def format_into_watch_url(url:str)->str:
         print(f"format_into_watch_url failed, url:{url}, error:{e.__str__}")
         return ""
     else:
+        print(f"format_into_watch_url succeed, url:{url}")
         return new_url

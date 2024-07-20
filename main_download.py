@@ -3,15 +3,23 @@ from dotenv import load_dotenv
 load_dotenv()
 
 import os
+import time
 from handler.youtube import format_into_watch_url
 from handler.youtube import download as ytb_download
-from handler.bilibili import download as bilibili_download
-from handler.ximalaya import download as ximalaya_download
+# from handler.bilibili import download as bilibili_download
+# from handler.ximalaya import download as ximalaya_download
+from database import handler as dao
 from utils import logger
+from utils.utime import random_sleep, get_now_time_string
+from utils.file import get_file_size
+from utils.lark import alarm_lark_text
+from utils.ip import get_local_ip, get_public_ip
+# from utils.cos import upload_file
+from utils.obs import upload_file
+import sys
 
 # 初始化
 logger = logger.init_logger("main_download")
-
 
 # 分析url链接视频来源
 def detect_type(data):
@@ -30,12 +38,12 @@ def download(full_url):
         logger.error(f"Failed to detect item type: {full_url}")
         return None
     elif item_type == "youtube":
-        audio_path = ytb_download(full_url, os.getenv('DOWNLOAD_PATH'))
-        logger.info(f"Downloaded youtube audio to {audio_path}")
+        download_path = ytb_download(full_url, os.getenv('DOWNLOAD_PATH'))
+        logger.info(f"Downloaded youtube audio to {download_path}")
     elif item_type == "bilibili":
         pass
         # audio_path = bilibili_download(full_url, cfg["common"]["download_path"])
-        logger.info(f"Downloaded bilibili audio to {audio_path}")
+        logger.info(f"Downloaded bilibili audio to {download_path}")
     elif item_type == "ximalaya" or item_type == "xmcdn":
         pass
         # audio_path = ximalaya_download(
@@ -43,23 +51,95 @@ def download(full_url):
         #     cfg["common"]["download_path"],
         #     is_xmcdn=item_type == "xmcdn",
         # )
-        logger.info(f"Downloaded ximalaya audio to {audio_path}")
-    return audio_path
+        logger.info(f"Downloaded ximalaya audio to {download_path}")
+    return download_path
 
 
-def main():
-    # 调用接口获取待处理数据
+def database_pipeline(pid):
+    time.sleep(60 * pid)
+    logger.debug(f"> pid {pid} started")
+    wait_flag = False
 
-    # 油管链接格式化
-    # url = "https://www.youtube.com/watch?v=tXuPmu2Sa60&list=PLRMEKqidcRnBaMTFQzWkXpNk8_xF3QvMZ"
-    # url = "https://www.youtube.com/watch?v=tXuPmu2Sa60"
-    url = "https://www.youtube.com/watch?v=6s416NmSFmw&list=PLRMEKqidcRnAGC6j1oYPFV9E26gyWdgU4&index=4"
-    url = format_into_watch_url(url)
+    while True:
+        # vid, _, link, _ = dao.get_next_audio(
+        #     f"WHERE status = 0 AND `lock` = 0 AND `language` = 'en' AND `type` = 3"
+        # )
+        id, _, link, _ = dao.get_next_audio(
+            f"WHERE status = 0 AND `lock` = 0 AND `language` = 'vt' AND `source_type` = 3"
+        )
+        if id is None:
+            if not wait_flag:
+                logger.info("Pipeline > no task, waiting...")
+                wait_flag = True
+            time.sleep(1)
+            continue
+        wait_flag = False
 
-    # 下载处理
-    download(url)
+        try:
+            logger.info(f"Pipeline > processing {id} -- {link}")
+            time_st = time.time()
 
-    
+            # 下载
+            link = format_into_watch_url(link)
+            download_path = download(link, id)
+            cloud_path = os.path.join(os.getenv("OBS_SAVEPATH"), os.path.basename(download_path))
+            
+            # 上传云端
+            cloud_link = upload_file(
+                from_path=download_path, to_path=cloud_path
+            )
+            
+            # 更新数据库
+            dao.uploaded_download(
+                id=id, 
+                cloud_type="obs",
+                cloud_link=cloud_link, 
+                # path=download_path
+            )
+            
+            #移除本地文件
+            # os.remove(download_path)
+
+            time_ed = time.time()
+            logger.info(
+                f"Pipeline > done processing {id}, uploaded to {cloud_link}, file_size:  %.2f MB, spend_time: %.2f seconds" \
+                %(get_file_size(download_path), time_ed - time_st) \
+            )
+            random_sleep(rand_st=25, rand_range=25) #间隔25s以上
+            
+        except KeyboardInterrupt:
+            logger.warning(f"Pipeline > interrupted processing {id}, reverting...")
+            # revert status to 0
+            dao.revert_audio(id)
+            # stop the process
+            break
+        except Exception as e:
+            dao.failed_audio(id)
+            logger.error(f"Pipeline > error processing {id}")
+            logger.error(e, stack_info=True)
+            # alarm to Lark Bot
+            now_str = get_now_time_string()
+            local_ip = get_local_ip()
+            public_ip = get_public_ip()
+            notice_text = f"[Youtube Crawler] download pipeline failed. \
+                \n\tVid:{id}  \
+                \n\tLink:{link} \
+                \n\tLocal_IP:{local_ip} \
+                \n\tPublic_IP:{public_ip} \
+                \n\t{e} \
+                \n\tTime:{now_str}"
+            alarm_lark_text(webhook=os.getenv("NOTICE_WEBHOOK"), text=notice_text)
+            random_sleep(rand_st=60*10, rand_range=60*10) #请求失败等待10-20mins
+            continue
+
 
 if __name__ == "__main__":
-    main()
+    # import multiprocessing
+    # PROCESS_NUM = 1 #同时处理的进程数量
+    # # PROCESS_NUM = os.getenv("PROCESS_NUM")
+
+    # with multiprocessing.Pool(PROCESS_NUM) as pool:
+    #     pool.map(database_pipeline, range(PROCESS_NUM))
+    # sys.exit(0)
+
+    database_pipeline(1)
