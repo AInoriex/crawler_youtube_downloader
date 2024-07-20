@@ -24,11 +24,12 @@ def main():
     # dao.create_video(video_data)
     # dao.get_video_by_vid("VID12345")
 
-    vid, _, link, _ = dao.get_next_audio(
+    id, _, link, _ = dao.get_next_audio(
         f"WHERE status = 0 AND `lock` = 0 AND `language` = 'vt' AND `source_type` = 3"
     )
 
     # 更新vid信息
+    dao.uploaded_download(id=id, cloud_type="obs", cloud_path=link)
 
     print("[MAIN END]")
 

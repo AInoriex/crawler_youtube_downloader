@@ -86,6 +86,7 @@ class Video:
         vid: str,
         source_type: int,
         cloud_path: str,
+        id: int = 0,
         position: int = 1,
         cloud_type: str = None,
         source_link: str = None,
@@ -95,6 +96,7 @@ class Video:
         lock=0,
         info="{}",
     ):
+        self.id = id
         self.vid = vid
         self.position = position
         self.source_type = source_type
@@ -143,16 +145,17 @@ def create_video(video: Video):
 def get_video_by_vid(vid):
     try:
         conn: MySQLConnection = db_manager.get_connection()
-        cursor = conn.cursor()
+        # cursor = conn.cursor()
         cursor = db_manager.execute_query(
-            f"SELECT vid, position, source_type, source_link, duration, cloud_type, cloud_path, language, status, `lock`, info FROM `{TABLE_NAME}` WHERE vid = %s",
+            f"SELECT id, vid, position, source_type, source_link, duration, cloud_type, cloud_path, language, status, `lock`, info FROM `{TABLE_NAME}` WHERE vid = %s",
             (vid,),
         )
         records = cursor.fetchone()
         if records is None:
             # print("Video not found")
             return None
-        id, *record = records
+        # id, *record = records
+        _, *record = records
         video = Video(*record)
         print("Video Retrieved:", video)
     except Exception as e:
@@ -166,7 +169,18 @@ def get_video_by_vid(vid):
             conn.close()
 
 
-def update_video(vid, new_data):
+def update_video_by_id(id, new_data):
+    updates = ", ".join([f"`{key}` = %s" for key in new_data])
+    values = list(new_data.values())
+
+    values.append(id)
+
+    sql = f"UPDATE `{TABLE_NAME}` SET {updates} WHERE id = %s"
+
+    db_manager.update(sql, values)
+    # print("Video updated successfully")
+
+def update_video_by_vid(vid, new_data):
     updates = ", ".join([f"`{key}` = %s" for key in new_data])
     values = list(new_data.values())
 
@@ -194,8 +208,8 @@ def update_total_count(where_query):
     current_time = time.time()
     # 如果超过一小时，则更新count
     if current_time - last_update_time > 3600 or total_count_cache == 0:
-        conn: MySQLConnection = db_manager.get_connection()
-        cursor = conn.cursor()
+        # conn: MySQLConnection = db_manager.get_connection()
+        # cursor = conn.cursor()
         cursor = db_manager.execute_query(
             f"""
             SELECT COUNT(*)
@@ -256,7 +270,8 @@ def get_next_audio(where_query, lock=True):
         id, vid, cloud_path, status, source_link = record
 
         if not lock:
-            return vid, cloud_path, source_link, status
+            # return vid, cloud_path, source_link, status
+            return id, cloud_path, source_link, status
 
         # 尝试更新锁状态
         cursor.execute(
@@ -267,14 +282,14 @@ def get_next_audio(where_query, lock=True):
         """,
             (id,),
         )
-
         update_count = cursor.rowcount
 
         # 如果更新成功，则提交事务
         if update_count == 1:
             conn.commit()
-            print("Video Retrieved:", vid, cloud_path, status)
-            return vid, cloud_path, source_link, status
+            print("Video Retrieved:", id, cloud_path, status)
+            # return vid, cloud_path, source_link, status
+            return id, cloud_path, source_link, status
         else:
             # 否则回滚事务
             conn.rollback()
@@ -291,22 +306,35 @@ def get_next_audio(where_query, lock=True):
             conn.close()
 
 
-# 处理成功更新
-def uploaded_audio(vid, cloud_path, path=None):
-    sql = f"UPDATE `{TABLE_NAME}` SET path = %s, cloud_path = %s, status = 2, `lock` = 0 WHERE vid = %s"
-    db_manager.update(sql, (path, cloud_path, vid))
+# # 处理成功更新
+# def uploaded_audio(vid, cloud_path, path=None):
+#     sql = f"UPDATE `{TABLE_NAME}` SET path = %s, cloud_path = %s, status = 2, `lock` = 0 WHERE vid = %s"
+#     db_manager.update(sql, (path, cloud_path, vid))
 
+# # 处理失败更新
+# def failed_audio(vid):
+#     sql = f"UPDATE `{TABLE_NAME}` SET `lock` = 2 WHERE vid = %s"
+#     db_manager.update(sql, (vid,))
+
+# # 数据解锁
+# def revert_audio(vid):
+#     sql = f"UPDATE `{TABLE_NAME}` SET `lock` = 0 WHERE vid = %s"
+#     db_manager.update(sql, (vid,))
+
+# 处理成功更新
+def uploaded_download(id, cloud_type, cloud_path, path=None):
+    sql = f"UPDATE `{TABLE_NAME}` SET cloud_type = %s, cloud_path = %s, status = 2, `lock` = 0 WHERE id = %s"
+    db_manager.update(sql, (cloud_type, cloud_path, id))
 
 # 处理失败更新
-def failed_audio(vid):
-    sql = f"UPDATE `{TABLE_NAME}` SET `lock` = 2 WHERE vid = %s"
-    db_manager.update(sql, (vid,))
-
+def failed_download(id):
+    sql = f"UPDATE `{TABLE_NAME}` SET `lock` = 2 WHERE id = %s"
+    db_manager.update(sql, (id,))
 
 # 数据解锁
-def revert_audio(vid):
-    sql = f"UPDATE `{TABLE_NAME}` SET `lock` = 0 WHERE vid = %s"
-    db_manager.update(sql, (vid,))
+def revert_download(id):
+    sql = f"UPDATE `{TABLE_NAME}` SET `lock` = 0 WHERE id = %s"
+    db_manager.update(sql, (id,))
 
 
 # Example Usage
