@@ -47,6 +47,8 @@ def load_options(save_audio_path):
         #         "preferredcodec": "m4a",
         #     }
         # ],
+        "username": "oauth2",
+        "password": "",
     }
 
 # 生成视频信息（yt_dlp只获取信息不下载）

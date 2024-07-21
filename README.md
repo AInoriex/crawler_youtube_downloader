@@ -34,6 +34,15 @@
    DATABASE_DB=crawler
    ```
 
+3. 安装反BOT校验插件，详见 https://github.com/coletdjnz/yt-dlp-youtube-oauth2
+
+   ```python
+   python3 -m pip install -U https://github.com/coletdjnz/yt-dlp-youtube-oauth2/archive/refs/heads/master.zip
+   ```
+
+   - 使用参数`--username oauth2 --password ''` 执行 `yt-dlp`
+   - 首次使用在 https://www.google.com/device 添加设备码
+
 3. 运行程序
 
 4. （施工中...）
