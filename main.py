@@ -7,6 +7,7 @@
 from dotenv import load_dotenv
 load_dotenv()
 from database import handler as dao
+from database import youtube_api
 
 def main():
     # video_data = dao.Video(
@@ -25,12 +26,23 @@ def main():
     # dao.create_video(video_data)
     # dao.get_video_by_vid("VID12345")
 
-    id, _, link, _ = dao.get_next_audio(
-        f"WHERE status = 0 AND `lock` = 0 AND `language` = 'vt' AND `source_type` = 3"
-    )
+    # Database Handler
 
+    # id, _, link, _ = dao.get_next_audio(
+    #     f"WHERE status = 0 AND `lock` = 0 AND `language` = 'vt' AND `source_type` = 3"
+    # )
     # 更新vid信息
-    dao.uploaded_download(id=id, cloud_type="obs", cloud_path=link)
+    # dao.uploaded_download(id=id, cloud_type="obs", cloud_path=link)
+
+    v = youtube_api.get_download_list()
+    if v is None:
+        print("Nothing to get")
+        return
+    print(v)
+
+    v.cloud_type = 2
+    v.cloud_path = "www.google.com"
+    youtube_api.update_status(v)
 
     print("[MAIN END]")
 

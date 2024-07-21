@@ -4,11 +4,13 @@ load_dotenv()
 
 import os
 import time
+from urllib.parse import urljoin
 from handler.youtube import format_into_watch_url
 from handler.youtube import download as ytb_download
 # from handler.bilibili import download as bilibili_download
 # from handler.ximalaya import download as ximalaya_download
-from database import handler as dao
+# from database import handler as dao
+from database.youtube_api import get_download_list, update_status
 from utils import logger
 from utils.utime import random_sleep, get_now_time_string
 from utils.file import get_file_size
@@ -16,7 +18,6 @@ from utils.lark import alarm_lark_text
 from utils.ip import get_local_ip, get_public_ip
 # from utils.cos import upload_file
 from utils.obs import upload_file
-import sys
 
 # 初始化
 logger = logger.init_logger("main_download")
@@ -56,33 +57,36 @@ def download(full_url):
 
 
 def database_pipeline(pid):
-    time.sleep(60 * pid)
+    # time.sleep(60 * pid)
     logger.debug(f"> pid {pid} started")
     wait_flag = False
 
     while True:
-        # vid, _, link, _ = dao.get_next_audio(
-        #     f"WHERE status = 0 AND `lock` = 0 AND `language` = 'en' AND `type` = 3"
+        # id, _, link, _ = dao.get_next_audio(
+        #     f"WHERE status = 0 AND `lock` = 0 AND `language` = 'vt' AND `source_type` = 3"
         # )
-        id, _, link, _ = dao.get_next_audio(
-            f"WHERE status = 0 AND `lock` = 0 AND `language` = 'vt' AND `source_type` = 3"
-        )
-        if id is None:
+        video = get_download_list()
+
+        # if id is None:
+        if video is None:
             if not wait_flag:
                 logger.info("Pipeline > no task, waiting...")
                 wait_flag = True
             time.sleep(1)
             continue
         wait_flag = False
+        id = video.id
+        link = video.source_link
 
         try:
             logger.info(f"Pipeline > processing {id} -- {link}")
             time_st = time.time()
 
-            # 下载
+            # 下载(本地存在不会被覆盖)
             link = format_into_watch_url(link)
-            download_path = download(link, id)
-            cloud_path = os.path.join(os.getenv("OBS_SAVEPATH"), os.path.basename(download_path))
+            download_path = download(link)
+            # cloud_path = os.path.join(os.getenv("OBS_SAVEPATH"), os.path.basename(download_path))
+            cloud_path = urljoin(os.getenv("OBS_SAVEPATH"), os.path.basename(download_path))
             
             # 上传云端
             cloud_link = upload_file(
@@ -90,33 +94,43 @@ def database_pipeline(pid):
             )
             
             # 更新数据库
-            dao.uploaded_download(
-                id=id, 
-                cloud_type="obs",
-                cloud_link=cloud_link, 
-                # path=download_path
-            )
+            # dao.uploaded_download(
+            #     id=id, 
+            #     cloud_type=2,
+            #     cloud_path=cloud_link, 
+            #     # path=download_path
+            # )
+            video.status = 2 # upload done
+            video.cloud_type = 2 # 1:cos 2:obs
+            video.cloud_path = cloud_link
+            update_status(video)
             
-            #移除本地文件
-            # os.remove(download_path)
+            # 移除本地文件
+            os.remove(download_path)
+
+            raise KeyError
 
             time_ed = time.time()
             logger.info(
-                f"Pipeline > done processing {id}, uploaded to {cloud_link}, file_size:  %.2f MB, spend_time: %.2f seconds" \
+                f"Pipeline > done processing {id}, uploaded to {cloud_path}, file_size:  %.2f MB, spend_time: %.2f seconds" \
                 %(get_file_size(download_path), time_ed - time_st) \
             )
             random_sleep(rand_st=25, rand_range=25) #间隔25s以上
             
         except KeyboardInterrupt:
             logger.warning(f"Pipeline > interrupted processing {id}, reverting...")
-            # revert status to 0
-            dao.revert_audio(id)
-            # stop the process
+            # revert lock to 0
+            # dao.revert_audio(id)
+            video.lock = 0
+            update_status(video)
             break
         except Exception as e:
-            dao.failed_audio(id)
             logger.error(f"Pipeline > error processing {id}")
             logger.error(e, stack_info=True)
+            # dao.failed_audio(id)
+            video.status = -1
+            video.lock = 0
+            update_status(video)
             # alarm to Lark Bot
             now_str = get_now_time_string()
             local_ip = get_local_ip()

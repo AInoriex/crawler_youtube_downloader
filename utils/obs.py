@@ -3,6 +3,7 @@ import os
 from obs import ObsClient
 from obs import PutObjectHeader
 from dotenv import load_dotenv
+from urllib.parse import urljoin
 import traceback
 load_dotenv()
 
@@ -58,7 +59,8 @@ def upload_file(from_path:str, to_path:str)->str:
         print('Put File Failed' + traceback.format_exc())
         raise e
     else:
-        return os.path.join(os.getenv("OBS_URLBASE"), to_path)
+        # https://obs-prod-hw-bj-xp-ai-train.obs.cn-north-4.myhuaweicloud.com\QUWAN_DATA/Vietnam/3ZXxN4zzTz8.webm
+        return urljoin(os.getenv("OBS_URLBASE"), to_path)
 
     finally:
         # 关闭obsClient

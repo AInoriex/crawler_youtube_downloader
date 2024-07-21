@@ -37,7 +37,8 @@ def load_options(save_audio_path):
         "outtmpl": save_audio_path + "/%(id)s.%(ext)s",
         # See help(yt_dlp.postprocessor) for a list of available Postprocessors and their arguments
         # 提取视频
-        "format": "bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best",
+        # "format": "bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best",
+        "format": "bestvideo+bestaudio/best",
         # 提取音频
         # "format": "m4a/bestaudio/best",
         # "postprocessors": [
@@ -88,7 +89,7 @@ def download_by_watch_url(video_url, save_path):
 
         ydl.download(vid)
         dump_info(info_dict, save_to_json_file)
-    return os.path.join(save_audio_path, f"{vid}.mp4")
+    return os.path.join(save_audio_path, f"{vid}.webm")
 
 # 下载油管播放列表链接
 # exp.  
@@ -117,7 +118,7 @@ def download_by_playlist(playlist_url, save_path, max_limit=0):
                 ydl.download(vid)
                 time.sleep(random.uniform(5, 10))  # sleep in case got banned by YouTube
                 dump_info(info_dict, save_to_json_file)
-                result_paths.append(os.path.join(save_audio_path, f"{vid}.mp4"))
+                result_paths.append(os.path.join(save_audio_path, f"{vid}.webm"))
                 success_num += 1
             except Exception as e:
                 print("> YouTube: \033[31mEXCEPTION OCCURED.\033[0m")

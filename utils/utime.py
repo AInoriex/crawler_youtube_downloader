@@ -23,3 +23,7 @@ def get_now_time_string():
 def get_now_time_string_short():
     ''' 返回现在时间戳字符串 | 格式：%年%月%日%时%分%秒 '''
     return time.strftime("%Y%m%d%H%M%S", time.localtime())
+
+def get_time_stamp():
+    ''' 获取时间戳 '''
+    return int(time.time())
