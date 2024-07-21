@@ -108,8 +108,6 @@ def database_pipeline(pid):
             # 移除本地文件
             os.remove(download_path)
 
-            raise KeyError
-
             time_ed = time.time()
             logger.info(
                 f"Pipeline > done processing {id}, uploaded to {cloud_path}, file_size:  %.2f MB, spend_time: %.2f seconds" \
