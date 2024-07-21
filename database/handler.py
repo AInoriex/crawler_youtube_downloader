@@ -2,6 +2,7 @@
 
 import time
 import random
+from os import getenv
 from mysql.connector.pooling import MySQLConnection
 from mysql.connector import Error
 from typing import List
@@ -118,7 +119,8 @@ class Video:
         )
 
 # Using the DatabaseManager
-db_manager = DatabaseManager()
+if getenv("DATABASE_GET_API") == '':
+    db_manager = DatabaseManager()
 
 # Create
 def create_video(video: Video):
