@@ -23,6 +23,10 @@ def make_path(save_path):
     os.makedirs(save_info_path, exist_ok=True)
     return save_audio_path, save_info_path
 
+def yt_dlp_monitor(self, d):
+    final_filename = d.get('info_dict').get('_filename')
+    # You could also just assign `d` here to access it and see all the data or even `print(d)` as it updates frequently
+
 # 配置yt_dlp下载模式
 def load_options(save_audio_path):
     return {
@@ -49,7 +53,7 @@ def load_options(save_audio_path):
         # ],
         "username": "oauth2",
         "password": "",
-        "ratelimit": "10M"
+        "ratelimit": 50 * 1024 * 1024, # x * M
     }
 
 # 生成视频信息（yt_dlp只获取信息不下载）
@@ -92,7 +96,8 @@ def download_by_watch_url(video_url, save_path):
 
         ydl.download(vid)
         dump_info(info_dict, save_to_json_file)
-    return os.path.join(save_audio_path, f"{vid}.webm")
+    # return os.path.join(save_audio_path, f"{vid}.webm")
+    return try_to_get_file_name(save_audio_path, vid, os.path.join(save_audio_path, f"{vid}.webm"))
 
 # 下载油管播放列表链接
 # exp.  
@@ -129,8 +134,6 @@ def download_by_playlist(playlist_url, save_path, max_limit=0):
                 continue
     return result_paths
 
-
-
 # 格式化链接保留参数v
 # exp.  url:https://www.youtube.com/watch?v=6s416NmSFmw&list=PLRMEKqidcRnAGC6j1oYPFV9E26gyWdgU4&index=4
 #       out: https://www.youtube.com/watch?v=6s416NmSFmw
@@ -164,3 +167,17 @@ def format_into_watch_url(url:str)->str:
     else:
         print(f"format_into_watch_url succeed, url:{url}")
         return new_url
+
+
+def try_to_get_file_name(save_dir:str, vid:str, default_name='')->str:
+    ''' 尝试获取下载文件名 '''
+    ret_name = ""
+    # files = []
+    for dirpath, dirnames, filenames in os.walk(save_dir):
+        for filename in filenames:
+            # files.append(os.path.join(dirpath, filename))
+            if vid in filename:
+                ret_name = (os.path.join(dirpath, filename))
+    else:
+        ret_name = default_name
+    return ret_name
