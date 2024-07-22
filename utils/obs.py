@@ -24,9 +24,12 @@ bucket = os.getenv("OBS_BUCKET")
 # 获取上传对象的进度
 def callback(transferredAmount, totalAmount, totalSeconds):
     # 获取上传平均速率(KB/S)
-    print(transferredAmount * 1.0 / totalSeconds / 1024)
+    # print(transferredAmount * 1.0 / totalSeconds / 1024)
+    trans_speed = transferredAmount * 1.0 / totalSeconds / 1024
     # 获取上传进度百分比
-    print(transferredAmount * 100.0 / totalAmount)
+    # print(transferredAmount * 100.0 / totalAmount)
+    trans_percent = transferredAmount * 100.0 / totalAmount
+    print(f"Obs > upload_file callback {trans_speed:.2f}KB/s | {trans_percent:.2f}%")
 
 # 上传
 def upload_file(from_path:str, to_path:str)->str:
