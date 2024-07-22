@@ -16,7 +16,7 @@ def get_local_ip()->str:
 def get_public_ip()->str:
     try:
         response = requests.get('https://httpbin.org/ip', timeout=5)
-        print(response.status_code, response.content)
+        # print(response.status_code, response.content)
         if response.status_code == 200:
             resp = response.json()
             return resp['origin']
@@ -27,6 +27,6 @@ def get_public_ip()->str:
 if __name__ == '__main__':
     external_ip = get_public_ip()
     if external_ip:
-        print(f"Your outbound IP address is: {external_ip}")
+        print(f"Ip > Your outbound IP address is: {external_ip}")
     else:
-        print("Unable to retrieve your outbound IP address.")
+        print("Ip > Unable to retrieve your outbound IP address.")

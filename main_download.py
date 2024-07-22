@@ -57,8 +57,8 @@ def download(full_url):
 
 
 def database_pipeline(pid):
-    time.sleep(60 * pid)
-    logger.debug(f"> pid {pid} started")
+    time.sleep(15 * pid)
+    logger.debug(f"Pipeline > pid {pid} started")
     wait_flag = False
 
     while True:
@@ -70,16 +70,16 @@ def database_pipeline(pid):
         # if id is None:
         if video is None:
             if not wait_flag:
-                logger.info("Pipeline > no task, waiting...")
+                logger.info(f"Pipeline > pid {pid} no task, waiting...")
                 wait_flag = True
-            time.sleep(30)
+            random_sleep(rand_st=20, rand_range=10)
             continue
         wait_flag = False
         id = video.id
         link = video.source_link
 
         try:
-            logger.info(f"Pipeline > processing {id} -- {link}")
+            logger.info(f"Pipeline > pid {pid} processing {id} -- {link}")
             time_st = time.time()
 
             # 下载(本地存在不会被覆盖)
@@ -108,7 +108,7 @@ def database_pipeline(pid):
             # LOG
             time_ed = time.time()
             logger.info(
-                f"Pipeline > done processing {id}, uploaded to {cloud_path}, file_size:  %.2f MB, spend_time: %.2f seconds" \
+                f"Pipeline > pid {pid} done processing {id}, uploaded to {cloud_path}, file_size:  %.2f MB, spend_time: %.2f seconds" \
                 %(get_file_size(download_path), time_ed - time_st) \
             )
             
@@ -118,14 +118,14 @@ def database_pipeline(pid):
             random_sleep(rand_st=25, rand_range=25) #间隔25s以上
             
         except KeyboardInterrupt:
-            logger.warning(f"Pipeline > interrupted processing {id}, reverting...")
+            logger.warning(f"Pipeline > pid {pid} interrupted processing {id}, reverting...")
             # revert lock to 0
             # dao.revert_audio(id)
             video.lock = 0
             update_status(video)
             break
         except Exception as e:
-            logger.error(f"Pipeline > error processing {id}")
+            logger.error(f"Pipeline > pid {pid} error processing {id}")
             logger.error(e, stack_info=True)
             # dao.failed_audio(id)
             video.status = -1

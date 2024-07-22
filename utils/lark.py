@@ -16,14 +16,15 @@ def alarm_lark_text(webhook:str, text:str)->bool:
 	    "msg_type": "text",
 	    "content": {"text": f"{text}"}
     }
-    print(f"request: {webhook} | {params}")
+    # print(f"request: {webhook} | {params}")
     resp = requests.post(url=webhook, json=params)
-    print(f"response: {resp.status_code} {resp.content}")
+    # print(f"response: {resp.status_code} {resp.content}")
     if resp.status_code != 200:
         return False
     resp = resp.json()
     if resp["code"] != 0:
         return False
+    print(f"Lark > 已通知飞书: {resp.status_code} {resp.params}")
     return True
 
 if __name__ == "__main__":

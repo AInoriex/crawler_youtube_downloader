@@ -13,7 +13,7 @@ def random_sleep(rand_range:int, rand_st:int):
         rand_st = 5
     rand_range = random.randint(rand_st, rand_st + rand_range)
     # logger.info(f"random_sleep {rand_range} seconds")
-    print(f"random_sleep {rand_range} seconds")
+    print(f"random_sleep > {rand_range} seconds")
     time.sleep(rand_range)
     return
 

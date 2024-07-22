@@ -45,18 +45,19 @@ def upload_file(from_path:str, to_path:str)->str:
         resp = obsClient.putFile(bucketName, objectKey, file_path=file_path, metadata=None, headers=headers)
         # 返回码为2xx时，接口调用成功，否则接口调用失败
         if resp.status < 300:
-            print('Put File Succeeded')
-            print('requestId:', resp.requestId)
-            print('etag:', resp.body.etag)
-            print('versionId:', resp.body.versionId)
-            print('storageClass:', resp.body.storageClass)
+            print('Obs > 上传OBS成功')
+            # print('requestId:', resp.requestId)
+            # print('etag:', resp.body.etag)
+            # print('versionId:', resp.body.versionId)
+            # print('storageClass:', resp.body.storageClass)
         else:
-            print('Put File Failed')
-            print('requestId:', resp.requestId)
-            print('errorCode:', resp.errorCode)
-            print('errorMessage:', resp.errorMessage)
+            # print('Put File Failed')
+            # print('requestId:', resp.requestId)
+            # print('errorCode:', resp.errorCode)
+            # print('errorMessage:', resp.errorMessage)
+            raise Exception(f"上传OBS失败, resp:{resp.status} {resp.errorCode} {resp.errorMessage} {resp.requestId}")
     except Exception as e:
-        print('Put File Failed' + traceback.format_exc())
+        print('Obs > 上传失败' + traceback.format_exc())
         raise e
     else:
         # https://obs-prod-hw-bj-xp-ai-train.obs.cn-north-4.myhuaweicloud.com\QUWAN_DATA/Vietnam/3ZXxN4zzTz8.webm

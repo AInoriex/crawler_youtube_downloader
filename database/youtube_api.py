@@ -7,14 +7,14 @@ from os import getenv
 def get_download_list()->Video|None:
     ''' 随机获取一条ytb记录 '''
     url = "%s?sign=%d"%(getenv("DATABASE_GET_API"), get_time_stamp())
-    # print(f"YoutubeGetDownloadList req, url:{url}")
+    # print(f"Ytb_db_get_api > req, url:{url}")
     resp = get(url=url)
-    print(f"YoutubeGetDownloadList resp, status_code:{resp.status_code}, content:{resp.content}")
+    print(f"Ytb_db_get_api > resp, status_code:{resp.status_code}, content:{resp.content}")
     assert resp.status_code == 200
     resp_json = resp.json()
-    # print("YoutubeGetDownloadList resp detail, status_code:%d, content:%s"%(resp_json["code"], resp_json["msg"]))
+    # print("Ytb_db_get_api > resp detail, status_code:%d, content:%s"%(resp_json["code"], resp_json["msg"]))
     if len(resp_json["data"]["result"]) <= 0:
-        print("YoutubeGetDownloadList nothing to get.")
+        # print("Ytb_db_get_api > nothing to get.")
         return None
     resp_data = resp_json["data"]["result"][0]
     video = Video(
@@ -47,10 +47,12 @@ def update_status(video:Video):
     resp = post(url=url, json=req)
     assert resp.status_code == 200
     resp_json = resp.json()
-    print("YoutubeGetDownloadList resp detail, status_code:%d, content:%s"%(resp_json["code"], resp_json["msg"]))
+    # print("Ytb_db_get_api > resp detail, status_code:%d, content:%s"%(resp_json["code"], resp_json["msg"]))
     resp_code = resp_json["code"]
     if resp_code != 0:
-        raise Exception(f"UpdatePodcastStatus failed, req:{req}, resp:{resp_json}")
+        raise Exception(f"更新数据接口失败, req:{req}, resp:{resp_json}")
+    else:
+        print("Ytb_db_get_api > 更新状态成功 req:%s"%(req))
 
 if __name__ == "__main__":
     v = get_download_list()

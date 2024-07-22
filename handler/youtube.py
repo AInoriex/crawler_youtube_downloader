@@ -94,7 +94,7 @@ def download(url, save_path):
 # 下载普通油管链接(支持只有请求参数v)
 # exp.  https://www.youtube.com/watch?v=6s416NmSFmw&list
 def download_by_watch_url(video_url, save_path, __retry=MAX_RETRY):
-    print(f"download_by_watch_url参数 video_url:{video_url} save_path:{save_path} retry:{__retry}")
+    print(f"Yt-dlp > download_by_watch_url参数 video_url:{video_url} save_path:{save_path} retry:{__retry}")
     try:
         save_audio_path, save_info_path = make_path(save_path)
         ydl_opts = load_options(save_audio_path)
@@ -105,7 +105,7 @@ def download_by_watch_url(video_url, save_path, __retry=MAX_RETRY):
 
             ydl.download(vid)
             dump_info(info_dict, save_to_json_file)
-            print(f"download_by_watch_url生成下载信息：{save_to_json_file}")
+            print(f"Yt-dlp > download_by_watch_url生成下载信息：{save_to_json_file}")
     except Exception as e:
         if __retry > 0:
             __retry = __retry - 1
@@ -130,8 +130,7 @@ def download_by_playlist(playlist_url, save_path, max_limit=0):
 
         for entry in author_info["entries"]:
             if success_num >= max_limit and max_limit != 0:
-                print(
-                    "> YouTube: Successfully downloaded",
+                print("Yt-dlp > YouTube: Successfully downloaded",
                     max_limit,
                     "video(s). Quitting.",
                 )
@@ -147,7 +146,7 @@ def download_by_playlist(playlist_url, save_path, max_limit=0):
                 result_paths.append(path.join(save_audio_path, f"{vid}.webm"))
                 success_num += 1
             except Exception as e:
-                print("> YouTube: \033[31mEXCEPTION OCCURED.\033[0m")
+                print("Yt-dlp >  YouTube: \033[31mEXCEPTION OCCURED.\033[0m")
                 print(e)
                 continue
     return result_paths
@@ -180,10 +179,10 @@ def format_into_watch_url(url:str)->str:
             else:
                 raise ValueError
     except Exception as e:
-        print(f"format_into_watch_url failed, url:{url}, error:{e.__str__}")
+        print(f"Yt-dlp > format_into_watch_url failed, url:{url}, error:{e.__str__}")
         return ""
     else:
-        print(f"format_into_watch_url succeed, url:{url}")
+        # print(f"format_into_watch_url succeed, url:{url}")
         return new_url
 
 

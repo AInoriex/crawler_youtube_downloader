@@ -6,3 +6,4 @@ conf/*
 download/*
 .venv/
 .env
+temp/
