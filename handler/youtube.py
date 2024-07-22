@@ -12,7 +12,7 @@ import random
 from handler.info import dump_info
 from urllib.parse import urlparse, parse_qs, urlencode, urlunparse
 from os import path, makedirs, walk, getenv
-MAX_RETRY = getenv("YTB_MAX_RETRY")
+MAX_RETRY = int(getenv("YTB_MAX_RETRY"))
 
 # 预创建下载目录
 # |—— audio
