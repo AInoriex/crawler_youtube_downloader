@@ -12,6 +12,7 @@ import random
 from handler.info import dump_info
 from urllib.parse import urlparse, parse_qs, urlencode, urlunparse
 from os import path, makedirs, walk, getenv
+from utils.utime import random_sleep
 MAX_RETRY = int(getenv("YTB_MAX_RETRY"))
 
 # 预创建下载目录
@@ -98,17 +99,17 @@ def download_by_watch_url(video_url, save_path, __retry=MAX_RETRY):
         save_audio_path, save_info_path = make_path(save_path)
         ydl_opts = load_options(save_audio_path)
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-            if __retry == MAX_RETRY:
-                info_dict = generate_video_info(video_url, ydl)
-                vid = info_dict["id"]
-                save_to_json_file = f"{save_info_path}/{vid}.json"
-                dump_info(info_dict, save_to_json_file)
-                print(f"download_by_watch_url生成下载信息：{save_to_json_file}")
+            info_dict = generate_video_info(video_url, ydl)
+            vid = info_dict["id"]
+            save_to_json_file = f"{save_info_path}/{vid}.json"
 
             ydl.download(vid)
+            dump_info(info_dict, save_to_json_file)
+            print(f"download_by_watch_url生成下载信息：{save_to_json_file}")
     except Exception as e:
         if __retry > 0:
             __retry = __retry - 1
+            random_sleep(rand_st=5, rand_range=5)
             return download_by_watch_url(video_url, save_path, __retry=__retry)
         else:
             raise e
