@@ -112,6 +112,8 @@ def download_by_watch_url(video_url, save_path, __retry=MAX_RETRY):
             random_sleep(rand_st=5, rand_range=5)
             return download_by_watch_url(video_url, save_path, __retry=__retry)
         else:
+            save_to_fail_file = f"{save_info_path}/{vid}.fail.json"
+            dump_info(info_dict, save_to_fail_file)
             raise e
     else:
         # return path.join(save_audio_path, f"{vid}.webm")
