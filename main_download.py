@@ -57,7 +57,7 @@ def download(full_url):
 
 
 def database_pipeline(pid):
-    # time.sleep(60 * pid)
+    time.sleep(60 * pid)
     logger.debug(f"> pid {pid} started")
     wait_flag = False
 
@@ -72,7 +72,7 @@ def database_pipeline(pid):
             if not wait_flag:
                 logger.info("Pipeline > no task, waiting...")
                 wait_flag = True
-            time.sleep(1)
+            time.sleep(30)
             continue
         wait_flag = False
         id = video.id
@@ -105,14 +105,16 @@ def database_pipeline(pid):
             video.cloud_path = cloud_link
             update_status(video)
             
-            # 移除本地文件
-            os.remove(download_path)
-
+            # LOG
             time_ed = time.time()
             logger.info(
                 f"Pipeline > done processing {id}, uploaded to {cloud_path}, file_size:  %.2f MB, spend_time: %.2f seconds" \
                 %(get_file_size(download_path), time_ed - time_st) \
             )
+            
+            # 移除本地文件
+            os.remove(download_path)
+            
             random_sleep(rand_st=25, rand_range=25) #间隔25s以上
             
         except KeyboardInterrupt:
@@ -141,17 +143,19 @@ def database_pipeline(pid):
                 \n\t{e} \
                 \n\tTime:{now_str}"
             alarm_lark_text(webhook=os.getenv("NOTICE_WEBHOOK"), text=notice_text)
-            random_sleep(rand_st=60*10, rand_range=60*10) #请求失败等待10-20mins
+            random_sleep(rand_st=60*5, rand_range=60*5) #请求失败等待05-10mins
             continue
 
 
 if __name__ == "__main__":
-    # import multiprocessing
+    import multiprocessing
+    from sys import exit
     # PROCESS_NUM = 1 #同时处理的进程数量
-    # # PROCESS_NUM = os.getenv("PROCESS_NUM")
+    PROCESS_NUM = os.getenv("PROCESS_NUM")
+    PROCESS_NUM = int(PROCESS_NUM)
 
-    # with multiprocessing.Pool(PROCESS_NUM) as pool:
-    #     pool.map(database_pipeline, range(PROCESS_NUM))
-    # sys.exit(0)
+    with multiprocessing.Pool(PROCESS_NUM) as pool:
+        pool.map(database_pipeline, range(PROCESS_NUM))
+    exit(0)
 
-    database_pipeline(1)
+    # database_pipeline(1)

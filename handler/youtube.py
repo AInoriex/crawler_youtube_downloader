@@ -53,7 +53,7 @@ def load_options(save_audio_path):
         # ],
         "username": "oauth2",
         "password": "",
-        "ratelimit": 50 * 1024 * 1024, # x * M
+        "ratelimit": 100 * 1024 * 1024, # x * M
     }
 
 # 生成视频信息（yt_dlp只获取信息不下载）
@@ -178,6 +178,7 @@ def try_to_get_file_name(save_dir:str, vid:str, default_name='')->str:
             # files.append(os.path.join(dirpath, filename))
             if vid in filename:
                 ret_name = (os.path.join(dirpath, filename))
-    else:
+                break
+    if ret_name == "":
         ret_name = default_name
     return ret_name
