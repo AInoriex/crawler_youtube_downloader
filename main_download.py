@@ -107,9 +107,11 @@ def database_pipeline(pid):
             
             # LOG
             time_ed = time.time()
+            file_size = get_file_size(download_path)
+            spend_time = time_ed - time_st
             logger.info(
                 f"Pipeline > pid {pid} done processing {id}, uploaded to {cloud_path}, file_size:  %.2f MB, spend_time: %.2f seconds" \
-                %(get_file_size(download_path), time_ed - time_st) \
+                %(file_size, spend_time) \
             )
             
             # 移除本地文件
@@ -151,22 +153,22 @@ def database_pipeline(pid):
             public_ip = get_public_ip()
             notice_text = f"[Youtube Crawler | DEBUG] download pipeline succeed. \
                 \n\t进程ID: {pid} \
-                \n\tSource_Link: {video.source_link} \
-                \n\tCloud_Link: {video.cloud_path} \
+                \n\tLink: {video.source_link} -> {video.cloud_path} | {file_size}MB \
+                \n\tSpend: {spend_time}s \
                 \n\tIP: {local_ip} | {public_ip}"
             alarm_lark_text(webhook=os.getenv("NOTICE_WEBHOOK"), text=notice_text)
             random_sleep(rand_st=25, rand_range=25) #成功间隔25s以上
 
 
 if __name__ == "__main__":
-    import multiprocessing
-    from sys import exit
-    # PROCESS_NUM = 1 #同时处理的进程数量
-    PROCESS_NUM = os.getenv("PROCESS_NUM")
-    PROCESS_NUM = int(PROCESS_NUM)
+    # import multiprocessing
+    # from sys import exit
+    # # PROCESS_NUM = 1 #同时处理的进程数量
+    # PROCESS_NUM = os.getenv("PROCESS_NUM")
+    # PROCESS_NUM = int(PROCESS_NUM)
 
-    with multiprocessing.Pool(PROCESS_NUM) as pool:
-        pool.map(database_pipeline, range(PROCESS_NUM))
-    exit(0)
+    # with multiprocessing.Pool(PROCESS_NUM) as pool:
+    #     pool.map(database_pipeline, range(PROCESS_NUM))
+    # exit(0)
 
-    # database_pipeline(1)
+    database_pipeline(1)

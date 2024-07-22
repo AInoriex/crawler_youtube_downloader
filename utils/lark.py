@@ -24,7 +24,7 @@ def alarm_lark_text(webhook:str, text:str)->bool:
     resp = resp.json()
     if resp["code"] != 0:
         return False
-    print(f"Lark > 已通知飞书: {resp.status_code} {resp.params}")
+    print(f"Lark > 已通知飞书: {resp}")
     return True
 
 if __name__ == "__main__":

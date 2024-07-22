@@ -21,6 +21,12 @@ sk = os.getenv("OBS_SECRETKEY")
 server = os.getenv("OBS_HOST")
 bucket = os.getenv("OBS_BUCKET")
 
+# 获取上传对象的进度
+def callback(transferredAmount, totalAmount, totalSeconds):
+    # 获取上传平均速率(KB/S)
+    print(transferredAmount * 1.0 / totalSeconds / 1024)
+    # 获取上传进度百分比
+    print(transferredAmount * 100.0 / totalAmount)
 
 # 上传
 def upload_file(from_path:str, to_path:str)->str:
@@ -42,7 +48,7 @@ def upload_file(from_path:str, to_path:str)->str:
         # 上传文件的自定义元数据
         # metadata = {'meta1': 'value1', 'meta2': 'value2'}
         # 文件上传
-        resp = obsClient.putFile(bucketName, objectKey, file_path=file_path, metadata=None, headers=headers)
+        resp = obsClient.putFile(bucketName, objectKey, file_path, metadata=None, headers=headers, progressCallback=callback)
         # 返回码为2xx时，接口调用成功，否则接口调用失败
         if resp.status < 300:
             print('Obs > 上传OBS成功')
