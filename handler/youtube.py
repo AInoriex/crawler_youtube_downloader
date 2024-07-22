@@ -33,7 +33,7 @@ def yt_dlp_monitor(self, d):
 def load_options(save_audio_path):
     # See help(yt_dlp.postprocessor) for a list of available Postprocessors and their arguments
     return {
-        "quiet": False,
+        "quiet": True,
         "dumpjson": True,
         "proxy": (
             # cfg["common"]["http_proxy"]

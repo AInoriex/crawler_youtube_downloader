@@ -114,9 +114,6 @@ def database_pipeline(pid):
             
             # 移除本地文件
             os.remove(download_path)
-            
-            random_sleep(rand_st=25, rand_range=25) #间隔25s以上
-            
         except KeyboardInterrupt:
             logger.warning(f"Pipeline > pid {pid} interrupted processing {id}, reverting...")
             # revert lock to 0
@@ -135,9 +132,11 @@ def database_pipeline(pid):
             now_str = get_now_time_string()
             local_ip = get_local_ip()
             public_ip = get_public_ip()
-            notice_text = f"[Youtube Crawler] download pipeline failed. \
-                \n\tVid:{id}  \
-                \n\tLink:{link} \
+            notice_text = f"[Youtube Crawler | ERROR] download pipeline failed. \
+                \n\tId:{video.id}  \
+                \n\tVid:{video.vid} \
+                \n\tSource_Link:{video.source_link} \
+                \n\tCloud_Link:{video.cloud_path} \
                 \n\tLocal_IP:{local_ip} \
                 \n\tPublic_IP:{public_ip} \
                 \n\t{e} \
@@ -145,6 +144,19 @@ def database_pipeline(pid):
             alarm_lark_text(webhook=os.getenv("NOTICE_WEBHOOK"), text=notice_text)
             random_sleep(rand_st=60*5, rand_range=60*5) #请求失败等待05-10mins
             continue
+        else:
+            # alarm to Lark Bot
+            local_ip = get_local_ip()
+            public_ip = get_public_ip()
+            notice_text = f"[Youtube Crawler | DEBUG] download pipeline succeed. \
+                \n\tId:{video.id}  \
+                \n\tVid:{video.vid} \
+                \n\tSource_Link:{video.source_link} \
+                \n\tCloud_Link:{video.cloud_path} \
+                \n\tLocal_IP:{local_ip} \
+                \n\tPublic_IP:{public_ip}"
+            alarm_lark_text(webhook=os.getenv("NOTICE_WEBHOOK"), text=notice_text)
+            random_sleep(rand_st=25, rand_range=25) #成功间隔25s以上
 
 
 if __name__ == "__main__":
