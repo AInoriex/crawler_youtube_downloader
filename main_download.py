@@ -133,14 +133,15 @@ def database_pipeline(pid):
             local_ip = get_local_ip()
             public_ip = get_public_ip()
             notice_text = f"[Youtube Crawler | ERROR] download pipeline failed. \
-                \n\tId:{video.id}  \
-                \n\tVid:{video.vid} \
-                \n\tSource_Link:{video.source_link} \
-                \n\tCloud_Link:{video.cloud_path} \
-                \n\tLocal_IP:{local_ip} \
-                \n\tPublic_IP:{public_ip} \
-                \n\t{e} \
-                \n\tTime:{now_str}"
+                \n\t进程ID: {pid} \
+                \n\tId: {video.id}  \
+                \n\tVid: {video.vid} \
+                \n\tSource_Link: {video.source_link} \
+                \n\tCloud_Link: {video.cloud_path} \
+                \n\tLocal_IP: {local_ip} \
+                \n\tPublic_IP: {public_ip} \
+                \n\tERROR: {e} \
+                \n\tTime: {now_str}"
             alarm_lark_text(webhook=os.getenv("NOTICE_WEBHOOK"), text=notice_text)
             random_sleep(rand_st=60*5, rand_range=60*5) #请求失败等待05-10mins
             continue
@@ -149,12 +150,10 @@ def database_pipeline(pid):
             local_ip = get_local_ip()
             public_ip = get_public_ip()
             notice_text = f"[Youtube Crawler | DEBUG] download pipeline succeed. \
-                \n\tId:{video.id}  \
-                \n\tVid:{video.vid} \
-                \n\tSource_Link:{video.source_link} \
-                \n\tCloud_Link:{video.cloud_path} \
-                \n\tLocal_IP:{local_ip} \
-                \n\tPublic_IP:{public_ip}"
+                \n\t进程ID: {pid} \
+                \n\tSource_Link: {video.source_link} \
+                \n\tCloud_Link: {video.cloud_path} \
+                \n\tIP: {local_ip} | {public_ip}"
             alarm_lark_text(webhook=os.getenv("NOTICE_WEBHOOK"), text=notice_text)
             random_sleep(rand_st=25, rand_range=25) #成功间隔25s以上
 
