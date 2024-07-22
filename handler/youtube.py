@@ -29,6 +29,7 @@ def yt_dlp_monitor(self, d):
 
 # 配置yt_dlp下载模式
 def load_options(save_audio_path):
+    # See help(yt_dlp.postprocessor) for a list of available Postprocessors and their arguments
     return {
         "quiet": False,
         "dumpjson": True,
@@ -39,7 +40,7 @@ def load_options(save_audio_path):
             else None
         ),
         "outtmpl": save_audio_path + "/%(id)s.%(ext)s",
-        # See help(yt_dlp.postprocessor) for a list of available Postprocessors and their arguments
+        
         # 提取视频
         # "format": "bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best",
         "format": "bestvideo+bestaudio/best",
@@ -51,9 +52,15 @@ def load_options(save_audio_path):
         #         "preferredcodec": "m4a",
         #     }
         # ],
+       
         "username": "oauth2",
         "password": "",
-        "ratelimit": 100 * 1024 * 1024, # x * M
+        "ratelimit": 100 * 1024 * 1024, # x * M,
+        "verbose": True, # Useful for checking if we have the latest version.
+        "nooverwrites": True,
+        "continuedl": True,
+        # "playlistreverse": True,
+        # "restrictfilenames": True,
     }
 
 # 生成视频信息（yt_dlp只获取信息不下载）
