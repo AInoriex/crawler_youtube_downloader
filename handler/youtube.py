@@ -7,20 +7,21 @@
 
 import yt_dlp
 from yt_dlp import YoutubeDL
-import os
 import time
 import random
 from handler.info import dump_info
 from urllib.parse import urlparse, parse_qs, urlencode, urlunparse
+from os import path, makedirs, walk, getenv
+MAX_RETRY = getenv("YTB_MAX_RETRY")
 
 # 预创建下载目录
 # |—— audio
 # |—— info
 def make_path(save_path):
-    save_audio_path = os.path.join(save_path, "audio")
-    save_info_path = os.path.join(save_path, "info")
-    os.makedirs(save_audio_path, exist_ok=True)
-    os.makedirs(save_info_path, exist_ok=True)
+    save_audio_path = path.join(save_path, "audio")
+    save_info_path = path.join(save_path, "info")
+    makedirs(save_audio_path, exist_ok=True)
+    makedirs(save_info_path, exist_ok=True)
     return save_audio_path, save_info_path
 
 def yt_dlp_monitor(self, d):
@@ -35,8 +36,8 @@ def load_options(save_audio_path):
         "dumpjson": True,
         "proxy": (
             # cfg["common"]["http_proxy"]
-            os.getenv("HTTP_PROXY")
-            if os.getenv("HTTP_PROXY") != ""
+            getenv("HTTP_PROXY")
+            if getenv("HTTP_PROXY") != ""
             else None
         ),
         "outtmpl": save_audio_path + "/%(id)s.%(ext)s",
@@ -91,29 +92,29 @@ def download(url, save_path):
 
 # 下载普通油管链接(支持只有请求参数v)
 # exp.  https://www.youtube.com/watch?v=6s416NmSFmw&list
-def download_by_watch_url(video_url, save_path, retry=5):
-    print(f"download_by_watch_url video_url:{video_url} save_path:{save_path} retry:{retry}")
+def download_by_watch_url(video_url, save_path, __retry=MAX_RETRY):
+    print(f"download_by_watch_url参数 video_url:{video_url} save_path:{save_path} retry:{__retry}")
     try:
         save_audio_path, save_info_path = make_path(save_path)
-
         ydl_opts = load_options(save_audio_path)
-
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-            info_dict = generate_video_info(video_url, ydl)
-            vid = info_dict["id"]
-            save_to_json_file = f"{save_info_path}/{vid}.json"
+            if __retry == MAX_RETRY:
+                info_dict = generate_video_info(video_url, ydl)
+                vid = info_dict["id"]
+                save_to_json_file = f"{save_info_path}/{vid}.json"
+                dump_info(info_dict, save_to_json_file)
+                print(f"download_by_watch_url生成下载信息：{save_to_json_file}")
 
             ydl.download(vid)
-            dump_info(info_dict, save_to_json_file)
     except Exception as e:
-        if retry > 0:
-            retry = retry - 1
-            return download_by_watch_url(video_url, save_path, retry=retry)
+        if __retry > 0:
+            __retry = __retry - 1
+            return download_by_watch_url(video_url, save_path, __retry=__retry)
         else:
             raise e
     else:
-        # return os.path.join(save_audio_path, f"{vid}.webm")
-        return try_to_get_file_name(save_audio_path, vid, os.path.join(save_audio_path, f"{vid}.webm"))
+        # return path.join(save_audio_path, f"{vid}.webm")
+        return try_to_get_file_name(save_audio_path, vid, path.join(save_audio_path, f"{vid}.webm"))
 
 # 下载油管播放列表链接
 # exp.  
@@ -142,7 +143,7 @@ def download_by_playlist(playlist_url, save_path, max_limit=0):
                 ydl.download(vid)
                 time.sleep(random.uniform(5, 10))  # sleep in case got banned by YouTube
                 dump_info(info_dict, save_to_json_file)
-                result_paths.append(os.path.join(save_audio_path, f"{vid}.webm"))
+                result_paths.append(path.join(save_audio_path, f"{vid}.webm"))
                 success_num += 1
             except Exception as e:
                 print("> YouTube: \033[31mEXCEPTION OCCURED.\033[0m")
@@ -189,11 +190,11 @@ def try_to_get_file_name(save_dir:str, vid:str, default_name='')->str:
     ''' 尝试获取下载文件名 '''
     ret_name = ""
     # files = []
-    for dirpath, dirnames, filenames in os.walk(save_dir):
+    for dirpath, dirnames, filenames in walk(save_dir):
         for filename in filenames:
-            # files.append(os.path.join(dirpath, filename))
+            # files.append(path.join(dirpath, filename))
             if vid in filename:
-                ret_name = (os.path.join(dirpath, filename))
+                ret_name = (path.join(dirpath, filename))
                 break
     if ret_name == "":
         ret_name = default_name
