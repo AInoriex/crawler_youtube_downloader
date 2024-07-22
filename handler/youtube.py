@@ -91,20 +91,29 @@ def download(url, save_path):
 
 # 下载普通油管链接(支持只有请求参数v)
 # exp.  https://www.youtube.com/watch?v=6s416NmSFmw&list
-def download_by_watch_url(video_url, save_path):
-    save_audio_path, save_info_path = make_path(save_path)
+def download_by_watch_url(video_url, save_path, retry=5):
+    print(f"download_by_watch_url video_url:{video_url} save_path:{save_path} retry:{retry}")
+    try:
+        save_audio_path, save_info_path = make_path(save_path)
 
-    ydl_opts = load_options(save_audio_path)
+        ydl_opts = load_options(save_audio_path)
 
-    with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-        info_dict = generate_video_info(video_url, ydl)
-        vid = info_dict["id"]
-        save_to_json_file = f"{save_info_path}/{vid}.json"
+        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+            info_dict = generate_video_info(video_url, ydl)
+            vid = info_dict["id"]
+            save_to_json_file = f"{save_info_path}/{vid}.json"
 
-        ydl.download(vid)
-        dump_info(info_dict, save_to_json_file)
-    # return os.path.join(save_audio_path, f"{vid}.webm")
-    return try_to_get_file_name(save_audio_path, vid, os.path.join(save_audio_path, f"{vid}.webm"))
+            ydl.download(vid)
+            dump_info(info_dict, save_to_json_file)
+    except Exception as e:
+        if retry > 0:
+            retry = retry - 1
+            return download_by_watch_url(video_url, save_path, retry=retry)
+        else:
+            raise e
+    else:
+        # return os.path.join(save_audio_path, f"{vid}.webm")
+        return try_to_get_file_name(save_audio_path, vid, os.path.join(save_audio_path, f"{vid}.webm"))
 
 # 下载油管播放列表链接
 # exp.  

@@ -1,6 +1,6 @@
 cd crawler_youtube_downloader
 
-echo "ready to create venv"
+echo "ready to check env"
 sleep 2
 py -3 -V
 ffmpeg -version
