@@ -5,14 +5,17 @@
 # config.load_cfg("conf/config.json")
 # cfg = config.cfg
 
-import yt_dlp
-from yt_dlp import YoutubeDL
 import time
 import random
-from handler.info import dump_info
-from urllib.parse import urlparse, parse_qs, urlencode, urlunparse
 from os import path, makedirs, walk, getenv
+from handler.info import dump_info
 from utils.utime import random_sleep
+import yt_dlp
+from yt_dlp import YoutubeDL
+from urllib.parse import urlparse, parse_qs, urlencode, urlunparse
+from datetime import datetime
+import pytz
+
 MAX_RETRY = int(getenv("YTB_MAX_RETRY"))
 
 # 预创建下载目录
@@ -201,3 +204,27 @@ def try_to_get_file_name(save_dir:str, vid:str, default_name='')->str:
     if ret_name == "":
         ret_name = default_name
     return ret_name
+
+
+def is_touch_fish_time()->bool:
+    ''' 判断是否能摸鱼，以Youtube总部地区为限制 '''
+    ytb_timezone = "America/Los_Angeles"
+
+    # 获取当前时间
+    now_utc = datetime.now(pytz.utc)
+    
+    # 转换为美国加利福尼亚州时区时间
+    pacific_tz = pytz.timezone(ytb_timezone)
+    now_pacific = now_utc.astimezone(pacific_tz)
+    
+    # 获取当前的小时
+    current_hour = now_pacific.hour
+    current_mint = now_pacific.minute
+    
+    # 判断是否在办公时间内(早上9点到下午5点)
+    if 9 <= current_hour < 17+1:
+        print(f"[×] 非摸鱼时间 > 当地时区 {ytb_timezone} | 当地时间 {current_hour}:{current_mint}")
+        return False
+    else:
+        print(f"[√] 摸鱼时间 > 当地时区 {ytb_timezone} | 当地时间 {current_hour}:{current_mint}")
+        return True

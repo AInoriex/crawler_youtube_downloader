@@ -1,3 +1,5 @@
+git clone https://github.com/AInoriex/crawler_youtube_downloader.git
+crawler_youtube_downloader/deploy.ps1
 cd crawler_youtube_downloader
 
 echo "ready to check env"

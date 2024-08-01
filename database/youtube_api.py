@@ -4,17 +4,21 @@ from uuid import uuid4
 from database.handler import Video
 from os import getenv
 
-def get_download_list()->Video|None:
-    ''' 随机获取一条ytb记录 '''
-    url = "%s?sign=%d"%(getenv("DATABASE_GET_API"), get_time_stamp())
-    # print(f"Ytb_db_get_api > req, url:{url}")
-    resp = get(url=url)
-    print(f"Ytb_db_get_api > resp, status_code:{resp.status_code}, content:{resp.content}")
+def get_download_list(query_id=0)->Video|None:
+    ''' 获取一条ytb记录 '''
+    url = getenv("DATABASE_GET_API")
+    params = {
+        "sign": get_time_stamp(),
+        "id": query_id
+    }
+    # print(f"Ytb_db_api > Get list Request | url:{url} params:{params}")
+    resp = get(url=url, params=params)
+    print(f"Ytb_db_api > Get list Response | status_code:{resp.status_code}, content:{resp.content}")
     assert resp.status_code == 200
     resp_json = resp.json()
-    # print("Ytb_db_get_api > resp detail, status_code:%d, content:%s"%(resp_json["code"], resp_json["msg"]))
+    # print("Ytb_db_api > Get list Response detail | status_code:%d, content:%s"%(resp_json["code"], resp_json["msg"]))
     if len(resp_json["data"]["result"]) <= 0:
-        # print("Ytb_db_get_api > nothing to get.")
+        # print("Ytb_db_api > Nothing to get.")
         return None
     resp_data = resp_json["data"]["result"][0]
     video = Video(
@@ -36,23 +40,26 @@ def get_download_list()->Video|None:
 def update_status(video:Video):
     ''' 更新ytb记录 '''
     url = getenv("DATABASE_UPDATE_API")
-    req = {
+    params = {
+        "sign": get_time_stamp()
+    }
+    reqbody = {
         "id": video.id,
         "vid": video.vid,
         "status": video.status,
         "cloud_type": video.cloud_type,
         "cloud_path": video.cloud_path,
     }
-
-    resp = post(url=url, json=req)
+    # print(f"Ytb_db_api > Update Request | url:{url} params:{params} body:{reqbody}")
+    resp = post(url=url, params=params, json=reqbody)
     assert resp.status_code == 200
     resp_json = resp.json()
-    # print("Ytb_db_get_api > resp detail, status_code:%d, content:%s"%(resp_json["code"], resp_json["msg"]))
+    # print("Ytb_db_api > Update Response | status_code:%d, content:%s"%(resp_json["code"], resp_json["msg"]))
     resp_code = resp_json["code"]
     if resp_code != 0:
-        raise Exception(f"更新数据接口失败, req:{req}, resp:{resp_json}")
+        raise Exception(f"更新数据接口失败, req:{reqbody}, resp:{resp_json}")
     else:
-        print("Ytb_db_get_api > 更新状态成功 req:%s"%(req))
+        print("Ytb_db_api > 更新状态成功 req:%s"%reqbody)
 
 if __name__ == "__main__":
     v = get_download_list()
