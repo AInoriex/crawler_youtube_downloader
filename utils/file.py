@@ -60,6 +60,14 @@ async def save_json_to_file(data:any)->bool:
 #     else:
 #         return True
 
+def dump_info(info_dict, out_file):
+    ''' 保存json文件到本地
+    @info_dict: 待打包服务
+    @out_file: 保存路径
+    '''
+    with open(out_file, "w", encoding="utf8") as out:
+        json.dump(info_dict, out, indent=4, ensure_ascii=False)
+
 def download_url_resource_local(url:str, local_path:str)->bool:
     ''' 下载url资源到本地 '''
     base = os.path.dirname(local_path)
