@@ -24,11 +24,10 @@ from utils.obs import upload_file
 
 logger = logger.init_logger("main_download")
 
-LIMIT_FAIL_COUNT = os.getenv("LIMIT_FAIL_COUNT")
+LIMIT_FAIL_COUNT = int(os.getenv("LIMIT_FAIL_COUNT"))
 # LIMIT_FAIL_COUNT = 10
 ''' 处理失败任务限制数 '''
-
-LIMIT_LAST_COUNT = os.getenv("LIMIT_LAST_COUNT")
+LIMIT_LAST_COUNT = int(os.getenv("LIMIT_LAST_COUNT"))
 # LIMIT_LAST_COUNT = 100
 ''' 连续处理任务限制数 '''
 
