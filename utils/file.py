@@ -14,7 +14,7 @@ import requests
 def get_file_size(filePath):
     ''' 获取文件大小(MB) '''
     fsize = os.path.getsize(filePath)
-    return fsize/float(1024*1024)
+    return round(fsize / float(1024 * 1024), 2)
 
 def save_json_to_file(data_dict:dict)->bool:
     ''' 保存json文件到本地 '''

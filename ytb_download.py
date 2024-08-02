@@ -70,7 +70,7 @@ def youtube_sleep(is_succ:bool, run_count:int, download_round:int):
     now_round = run_count//LIMIT_LAST_COUNT + 1
     if now_round > download_round:
         logger.info(f"Pipeline > 触发轮数限制, 当前轮数：{now_round}")
-        random_sleep(rand_st=60*30, rand_range=1) #每轮固定等30mins
+        random_sleep(rand_st=60*20, rand_range=1) #每轮固定等20mins
         return
 
     if is_succ:
@@ -89,7 +89,7 @@ def database_pipeline(pid):
     time.sleep(15 * pid)
     logger.debug(f"Pipeline > pid {pid} started")
     wait_flag = False
-    download_round = 0      # 当前下载轮数
+    download_round = 1      # 当前下载轮数
     run_count = 0           # 持续处理的任务个数
     continue_fail_count = 0 # 连续失败的任务个数
 
@@ -97,7 +97,6 @@ def database_pipeline(pid):
         video = get_download_list(query_id=0)
         # video = get_download_list(query_id=4898)
 
-        # if id is None:
         if video is None:
             if not wait_flag:
                 logger.info(f"Pipeline > pid {pid} no task which has processed {run_count} tasks, waiting...")
@@ -110,20 +109,24 @@ def database_pipeline(pid):
 
         try:
             run_count += 1
-            download_round = run_count//LIMIT_LAST_COUNT + 1
             logger.info(f"Pipeline > pid {pid} processing {id} -- {link}, 轮数 {download_round} | 处理数 {run_count}")
-            time_st = time.time()
+            time_1 = time.time()
 
-            # 下载(本地存在不会被覆盖)
+            # 下载(本地存在不会被覆盖，续传)
+            # random_sleep(5, 3)
             link = format_into_watch_url(link)
             download_path = download(link)
-            # cloud_path = os.path.join(os.getenv("OBS_SAVEPATH"), os.path.basename(download_path))
             cloud_path = urljoin(os.getenv("OBS_SAVEPATH"), os.path.basename(download_path))
+            time_2 = time.time()
+            spend_download_time = int(time_2 - time_1) #下载花费时间
             
             # 上传云端
+            # random_sleep(5, 3)
             cloud_link = upload_file(
                 from_path=download_path, to_path=cloud_path
             )
+            time_3 = time.time()
+            spend_upload_time = int(time_3 - time_2) #上传花费时间
             
             # 更新数据库
             video.status = 2 # upload done
@@ -132,12 +135,11 @@ def database_pipeline(pid):
             update_status(video)
             
             # 日志记录
-            time_ed = time.time()
+            spend_total_time = int(time_3 - time_1) #总花费时间
             file_size = get_file_size(download_path)
-            spend_time = time_ed - time_st
             logger.info(
-                f"Pipeline > pid {pid} done processing {id}, uploaded to {cloud_path}, file_size:  %.2f MB, spend_time: %.2f seconds" \
-                %(file_size, spend_time) \
+                f"Pipeline > pid {pid} done processing {id}, uploaded to {cloud_path}, \
+                    file_size: {file_size} MB, spend_time: {format_second_to_time_string(spend_total_time)} seconds"
             )
             
             # 移除本地文件
@@ -146,32 +148,33 @@ def database_pipeline(pid):
         except KeyboardInterrupt:
             logger.warning(f"Pipeline > pid {pid} interrupted processing {id}, reverting...")
             # revert lock to 0
-            # dao.revert_audio(id)
             video.lock = 0
             update_status(video)
             break
         except Exception as e:
             continue_fail_count += 1
+            time_fail = time.time()
             logger.error(f"Pipeline > pid {pid} error processing {id}")
             logger.error(e, stack_info=True)
-            # dao.failed_audio(id)
+            # 任务回调
             video.status = -1
             video.lock = 0
             update_status(video)
-            # alarm to Lark Bot
+            # 告警
             now_str = get_now_time_string()
             local_ip = get_local_ip()
             public_ip = get_public_ip()
             notice_text = f"[Youtube Crawler | ERROR] download pipeline failed. \
                 \n\t进程ID: {pid} \
-                \n\t下载信息: 轮数 {round} | 处理总数 {run_count} | 连续失败数 {continue_fail_count}\
+                \n\t下载信息: 轮数 {download_round} | 处理总数 {run_count} | 连续失败数 {continue_fail_count}\
                 \n\t资源ID: {video.id} | {video.vid} \
                 \n\tSource_Link: {video.source_link} \
                 \n\tCloud_Link: {video.cloud_path} \
-                \n\t资源共 {file_size}MB , 处理了{format_second_to_time_string(int(spend_time))} \
+                \n\t资源共 {file_size}MB , 共处理了{format_second_to_time_string(int(time_fail-time_1))} \
                 \n\tIP: {local_ip} | {public_ip} \
                 \n\tERROR: {e} \
                 \n\t告警时间: {now_str}"
+            logger.error(notice_text)
             alarm_lark_text(webhook=os.getenv("NOTICE_WEBHOOK"), text=notice_text)
             # 失败过多直接退出
             if continue_fail_count > LIMIT_FAIL_COUNT:
@@ -181,17 +184,22 @@ def database_pipeline(pid):
             continue
         else:
             continue_fail_count = 0
-            # alarm to Lark Bot
+            # 告警
             local_ip = get_local_ip()
             public_ip = get_public_ip()
             notice_text = f"[Youtube Crawler | DEBUG] download pipeline succeed. \
                 \n\t进程ID: {pid} \
-                \n\t下载信息: 轮数 {round} | 处理总数 {run_count} | 连续失败数 {continue_fail_count} \
+                \n\t下载信息: 轮数 {download_round} | 处理总数 {run_count} | 连续失败数 {continue_fail_count} \
                 \n\tLink: {video.source_link} -> {video.cloud_path} \
-                \n\t资源共 {file_size}MB , 处理了{format_second_to_time_string(int(spend_time))} \
+                \n\t资源共 {file_size}MB , 共处理了{format_second_to_time_string(spend_total_time)} \
+                \n\t下载时长: {format_second_to_time_string(spend_download_time)} , 上传时长: {format_second_to_time_string(spend_upload_time)} \
+                \n\t下载均速: {round(file_size/spend_download_time, 2)}M/s , 上传均速: {round(file_size/spend_upload_time, 2)}M/s \
                 \n\tIP: {local_ip} | {public_ip}"
+            logger.info(notice_text)
             alarm_lark_text(webhook=os.getenv("NOTICE_WEBHOOK"), text=notice_text)
             youtube_sleep(is_succ=True, run_count=run_count, download_round=download_round)
+        finally:
+            download_round = run_count//LIMIT_LAST_COUNT + 1
 
 
 if __name__ == "__main__":

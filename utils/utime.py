@@ -30,7 +30,7 @@ def get_time_stamp() -> int:
     ''' 获取时间戳 '''
     return int(time.time())
 
-def format_second_to_time_string(sec: int) -> str:
+def format_second_to_time_string(sec=0) -> str:
     ''' 转化秒数为时间字符串 '''
     if sec < 60:
         return f"{sec}秒"
