@@ -118,7 +118,7 @@ def database_pipeline(pid):
             download_path = download(link)
             cloud_path = urljoin(os.getenv("OBS_SAVEPATH"), os.path.basename(download_path))
             time_2 = time.time()
-            spend_download_time = int(time_2 - time_1) #下载花费时间
+            spend_download_time = max(time_2 - time_1, 0.01) #下载花费时间
             
             # 上传云端
             # random_sleep(5, 3)
@@ -126,7 +126,7 @@ def database_pipeline(pid):
                 from_path=download_path, to_path=cloud_path
             )
             time_3 = time.time()
-            spend_upload_time = int(time_3 - time_2) #上传花费时间
+            spend_upload_time = max(time_3 - time_2, 0.01) #上传花费时间
             
             # 更新数据库
             video.status = 2 # upload done
@@ -191,9 +191,9 @@ def database_pipeline(pid):
                 \n\t进程ID: {pid} \
                 \n\t下载信息: 轮数 {download_round} | 处理总数 {run_count} | 连续失败数 {continue_fail_count} \
                 \n\tLink: {video.source_link} -> {video.cloud_path} \
-                \n\t资源共 {file_size}MB , 共处理了{format_second_to_time_string(spend_total_time)} \
+                \n\t资源共 {file_size:.2f}MB , 共处理了{format_second_to_time_string(spend_total_time)} \
                 \n\t下载时长: {format_second_to_time_string(spend_download_time)} , 上传时长: {format_second_to_time_string(spend_upload_time)} \
-                \n\t下载均速: {round(file_size/spend_download_time, 2)}M/s , 上传均速: {round(file_size/spend_upload_time, 2)}M/s \
+                \n\t下载均速: {file_size/spend_download_time:.2f}M/s , 上传均速: {file_size/spend_upload_time:.2f}M/s \
                 \n\tIP: {local_ip} | {public_ip}"
             logger.info(notice_text)
             alarm_lark_text(webhook=os.getenv("NOTICE_WEBHOOK"), text=notice_text)

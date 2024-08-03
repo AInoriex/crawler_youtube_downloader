@@ -30,21 +30,21 @@ def get_time_stamp() -> int:
     ''' 获取时间戳 '''
     return int(time.time())
 
-def format_second_to_time_string(sec=0) -> str:
+def format_second_to_time_string(sec=0.0) -> str:
     ''' 转化秒数为时间字符串 '''
     if sec < 60:
-        return f"{sec}秒"
+        return f"{sec:.2f}秒"
     elif sec < 3600:
-        minutes = sec // 60
+        minutes = int(sec // 60)
         seconds = sec % 60
-        return f"{minutes}分钟{seconds}秒" if seconds > 0 else f"{minutes}分钟"
+        return f"{minutes}分钟{seconds:.2f}秒" if seconds > 0 else f"{minutes}分钟"
     else:
-        hours = sec // 3600
-        minutes = (sec % 3600) // 60
+        hours = int(sec // 3600)
+        minutes = int((sec % 3600) // 60)
         seconds = sec % 60
         time_str = f"{hours}小时"
         if minutes > 0:
             time_str += f"{minutes}分钟"
         if seconds > 0:
-            time_str += f"{seconds}秒"
+            time_str += f"{seconds:.2f}秒"
         return time_str
