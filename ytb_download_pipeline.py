@@ -203,14 +203,14 @@ def database_pipeline(pid):
 
 
 if __name__ == "__main__":
-    # import multiprocessing
-    # from sys import exit
-    # # PROCESS_NUM = 1 #同时处理的进程数量
-    # PROCESS_NUM = os.getenv("PROCESS_NUM")
-    # PROCESS_NUM = int(PROCESS_NUM)
+    import multiprocessing
+    from sys import exit
+    # PROCESS_NUM = 1 #同时处理的进程数量
+    PROCESS_NUM = os.getenv("PROCESS_NUM")
+    PROCESS_NUM = int(PROCESS_NUM)
 
-    # with multiprocessing.Pool(PROCESS_NUM) as pool:
-    #     pool.map(database_pipeline, range(PROCESS_NUM))
-    # exit(0)
+    with multiprocessing.Pool(PROCESS_NUM) as pool:
+        pool.map(database_pipeline, range(PROCESS_NUM))
+    exit(0)
 
-    database_pipeline(0)
+    # database_pipeline(0)
