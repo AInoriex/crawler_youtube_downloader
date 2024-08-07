@@ -1,6 +1,6 @@
-git clone https://github.com/AInoriex/crawler_youtube_downloader.git
-crawler_youtube_downloader/deploy.ps1
-cd crawler_youtube_downloader
+# git clone https://github.com/AInoriex/crawler_youtube_downloader.git
+# crawler_youtube_downloader/deploy.ps1
+# cd crawler_youtube_downloader
 
 echo "ready to check env"
 sleep 2
@@ -19,4 +19,5 @@ sleep 2
 
 echo "ready to add google device code"
 sleep 2
-.venv\Scripts\yt-dlp --username oauth2 https://www.youtube.com/watch?v=3ZXxN4zzTz8
+#.venv\Scripts\yt-dlp --username oauth2 --cache-dir /xyh/crawler_youtube_downloader/cache/yt-dlp --output ./download https://www.youtube.com/watch?v=2mWbEZjqCYk
+.venv\Scripts\yt-dlp --username oauth2 --output ./download https://www.youtube.com/watch?v=2mWbEZjqCYk
