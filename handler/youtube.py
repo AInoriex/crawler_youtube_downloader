@@ -35,8 +35,17 @@ def yt_dlp_monitor(self, d):
 # 配置yt_dlp下载模式
 def load_options(save_audio_path):
     # See help(yt_dlp.postprocessor) for a list of available Postprocessors and their arguments
+    # See details at https://github.com/yt-dlp/yt-dlp/blob/master/yt_dlp/YoutubeDL.py
+    oauth2_cache_path = getenv("OAUTH2_PATH") if getenv("OAUTH2_PATH") else ""
+    if oauth2_cache_path:
+        print(f"Yt-dlp+oauth2 > load cache in {oauth2_cache_path}")
+    else:
+        print(f"Yt-dlp+oauth2 > use default cache")
+
     return {
-        "quiet": True,
+        # 下载配置
+        "quiet": True, # Do not print messages to stdout.
+        # "verbose": False, # Print additional info to stdout.
         "dumpjson": True,
         "proxy": (
             # cfg["common"]["http_proxy"]
@@ -44,12 +53,17 @@ def load_options(save_audio_path):
             if getenv("HTTP_PROXY") != ""
             else None
         ),
-        "outtmpl": save_audio_path + "/%(id)s.%(ext)s",
+        "ratelimit": 100 * 1024 * 1024, # x * M,
+        "nooverwrites": True,
+        "continuedl": True, # Continue download
+        # "playlistreverse": True,
         
-        # 提取视频
+        # 下载文件格式配置
+        # # 提取视频
+        "outtmpl": save_audio_path + "/%(id)s.%(ext)s",
         # "format": "bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best",
         "format": "bestvideo+bestaudio/best",
-        # 提取音频
+        # # 提取音频
         # "format": "m4a/bestaudio/best",
         # "postprocessors": [
         #     {  # Extract audio using ffmpeg
@@ -58,14 +72,10 @@ def load_options(save_audio_path):
         #     }
         # ],
        
+        # 账号鉴权
         "username": "oauth2",
         "password": "",
-        "ratelimit": 100 * 1024 * 1024, # x * M,
-        "verbose": True, # Useful for checking if we have the latest version.
-        "nooverwrites": True,
-        "continuedl": True,
-        # "playlistreverse": True,
-        # "restrictfilenames": True,
+        "cachedir": oauth2_cache_path, # Location of the cache files in the filesystem. False to disable filesystem cache.
     }
 
 # 生成视频信息（yt_dlp只获取信息不下载）
