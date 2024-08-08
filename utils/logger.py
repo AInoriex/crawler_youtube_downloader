@@ -1,10 +1,4 @@
 # -*- coding: UTF8 -*-
-# from utils.tool import load_cfg
-# cfg = load_cfg("config.json")
-# from config import Config
-# config = Config()
-# config.load_cfg("conf/config.json")
-# cfg = config.cfg
 
 import logging
 import time
@@ -21,7 +15,6 @@ def init_logger(name):
     log_date = time.strftime("%Y-%m-%d", time.localtime())
     log_time = time.strftime("%Y%m%d%H%M%S", time.localtime())
 
-    # log_dir = os.path.join(cfg["common"]["log_path"], log_date)
     log_dir = os.path.join(os.getenv('LOG_PATH'), log_date)
     os.makedirs(log_dir, exist_ok=True)
 

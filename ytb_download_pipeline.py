@@ -18,9 +18,9 @@ from utils.ip import get_local_ip, get_public_ip
 # from utils.cos import upload_file
 from utils.obs import upload_file
 
-# -----------------
-# ---- 初始化 -----
-# -----------------
+# ---------------------
+# ---- 初始化参数 -----
+# ---------------------
 
 logger = logger.init_logger("main_download")
 
@@ -86,7 +86,7 @@ def youtube_sleep(is_succ:bool, run_count:int, download_round:int):
 
 
 def database_pipeline(pid):
-    time.sleep(15 * pid)
+    time.sleep(30 * pid)
     logger.debug(f"Pipeline > pid {pid} started")
     wait_flag = False
     download_round = 1      # 当前下载轮数
@@ -113,15 +113,13 @@ def database_pipeline(pid):
             time_1 = time.time()
 
             # 下载(本地存在不会被覆盖，续传)
-            # random_sleep(5, 3)
             link = format_into_watch_url(link)
             download_path = download(link)
-            cloud_path = urljoin(os.getenv("OBS_SAVEPATH"), os.path.basename(download_path))
             time_2 = time.time()
             spend_download_time = max(time_2 - time_1, 0.01) #下载花费时间
             
             # 上传云端
-            # random_sleep(5, 3)
+            cloud_path = urljoin(os.getenv("OBS_SAVEPATH"), os.path.basename(download_path))
             cloud_link = upload_file(
                 from_path=download_path, to_path=cloud_path
             )

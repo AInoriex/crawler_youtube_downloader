@@ -1,10 +1,4 @@
 # -*- coding: UTF8 -*-
-# from utils.tool import load_cfg
-# from config import Config
-# config = Config()
-# config.load_cfg("conf/config.json")
-# config = Config()
-# cfg = config.cfg
 
 import os
 import time
@@ -18,7 +12,6 @@ def get_file_size(filePath):
 
 def save_json_to_file(data_dict:dict)->bool:
     ''' 保存json文件到本地 '''
-    # output_path = cfg["common"]["tmp_folder_path"]
     output_path = os.getenv("TMP_FOLDER_PATH")
     os.makedirs(output_path, exist_ok=True)
     log_time = time.strftime("%Y%m%d%H%M%S", time.localtime())
@@ -33,7 +26,6 @@ def save_json_to_file(data_dict:dict)->bool:
 
 async def save_json_to_file(data:any)->bool:
     ''' 保存json文件到本地 '''
-    # output_path = cfg["common"]["tmp_folder_path"]
     output_path = os.getenv("TMP_FOLDER_PATH")
     os.makedirs(output_path, exist_ok=True)
     log_time = time.strftime("%Y%m%d%H%M%S", time.localtime())

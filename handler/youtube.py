@@ -1,10 +1,3 @@
-# from utils.tool import load_cfg
-# cfg = load_cfg("config.json")
-# from config import Config
-# config = Config()
-# config.load_cfg("conf/config.json")
-# cfg = config.cfg
-
 import time
 import random
 from os import path, makedirs, walk, getenv
@@ -36,19 +29,19 @@ def yt_dlp_monitor(self, d):
 def load_options(save_audio_path):
     # See help(yt_dlp.postprocessor) for a list of available Postprocessors and their arguments
     # See details at https://github.com/yt-dlp/yt-dlp/blob/master/yt_dlp/YoutubeDL.py
-    oauth2_cache_path = getenv("OAUTH2_PATH") if getenv("OAUTH2_PATH") else ""
-    if oauth2_cache_path:
-        print(f"Yt-dlp+oauth2 > load cache in {oauth2_cache_path}")
+    DEBUG_MODE = getenv("YTB_DEBUG", False) == "True"
+    OAUTH2_PATH = getenv("YTB_OAUTH2_PATH") if getenv("YTB_OAUTH2_PATH") else ""
+    if OAUTH2_PATH:
+        print(f"Yt-dlp+oauth2 > load cache in {OAUTH2_PATH}")
     else:
         print(f"Yt-dlp+oauth2 > use default cache")
 
     return {
         # 下载配置
-        "quiet": True, # Do not print messages to stdout.
-        # "verbose": False, # Print additional info to stdout.
+        "quiet": False if DEBUG_MODE else True, # Do not print messages to stdout.
+        "verbose": True if DEBUG_MODE else False, # Print additional info to stdout.
         "dumpjson": True,
         "proxy": (
-            # cfg["common"]["http_proxy"]
             getenv("HTTP_PROXY")
             if getenv("HTTP_PROXY") != ""
             else None
@@ -75,7 +68,7 @@ def load_options(save_audio_path):
         # 账号鉴权
         "username": "oauth2",
         "password": "",
-        "cachedir": oauth2_cache_path, # Location of the cache files in the filesystem. False to disable filesystem cache.
+        "cachedir": OAUTH2_PATH, # Location of the cache files in the filesystem. False to disable filesystem cache.
     }
 
 # 生成视频信息（yt_dlp只获取信息不下载）
