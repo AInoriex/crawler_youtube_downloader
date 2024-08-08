@@ -26,7 +26,7 @@ def yt_dlp_monitor(self, d):
     # You could also just assign `d` here to access it and see all the data or even `print(d)` as it updates frequently
 
 # 配置yt_dlp下载模式
-def load_options(save_audio_path):
+def load_options(save_audio_path:str):
     # See help(yt_dlp.postprocessor) for a list of available Postprocessors and their arguments
     # See details at https://github.com/yt-dlp/yt-dlp/blob/master/yt_dlp/YoutubeDL.py
     DEBUG_MODE = getenv("YTB_DEBUG", False) == "True"
@@ -55,7 +55,12 @@ def load_options(save_audio_path):
         # # 提取视频
         "outtmpl": save_audio_path + "/%(id)s.%(ext)s",
         # "format": "bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best",
-        "format": "bestvideo+bestaudio/best",
+        "format": "bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]",
+        "postprocessors": [{
+            "key": "FFmpegVideoConvertor",
+            "preferedformat": "mp4",  # one of avi, flv, mkv, mp4, ogg, webm
+        }],
+
         # # 提取音频
         # "format": "m4a/bestaudio/best",
         # "postprocessors": [
@@ -123,7 +128,7 @@ def download_by_watch_url(video_url, save_path, __retry=MAX_RETRY):
             raise e
     else:
         # return path.join(save_audio_path, f"{vid}.webm")
-        return try_to_get_file_name(save_audio_path, vid, path.join(save_audio_path, f"{vid}.webm"))
+        return try_to_get_file_name(save_audio_path, vid, path.join(save_audio_path, f"{vid}.mp4"))
 
 # 下载油管播放列表链接
 # exp.  
