@@ -206,11 +206,15 @@ def try_to_get_file_name(save_dir:str, vid:str, default_name='')->str:
     for dirpath, dirnames, filenames in walk(save_dir):
         for filename in filenames:
             # files.append(path.join(dirpath, filename))
+            if ".part" in filename:
+                print("try_to_get_file_name > part文件跳过获取")
+                continue
             if vid in filename:
                 ret_name = (path.join(dirpath, filename))
                 break
     if ret_name == "":
         ret_name = default_name
+    print(f"try_to_get_file_name > 获取到本地资源文件{ret_name}")
     return ret_name
 
 
