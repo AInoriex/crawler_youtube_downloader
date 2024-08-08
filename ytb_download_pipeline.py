@@ -174,11 +174,11 @@ def database_pipeline(pid):
                 \n\tERROR: {e} \
                 \n\t告警时间: {now_str}"
             logger.error(notice_text)
-            alarm_lark_text(webhook=os.getenv("NOTICE_WEBHOOK"), text=notice_text)
+            alarm_lark_text(webhook=os.getenv("LARK_NOTICE_WEBHOOK"), text=notice_text)
             # 失败过多直接退出
             if continue_fail_count > LIMIT_FAIL_COUNT:
                 logger.error(f"Pipeline > pid {pid} unexpectable exit beceuse of too much fail count: {continue_fail_count}")
-                alarm_lark_text(webhook=os.getenv("NOTICE_WEBHOOK"), text=notice_text)
+                alarm_lark_text(webhook=os.getenv("LARK_ERROR_WEBHOOK"), text=notice_text)
                 exit()
             youtube_sleep(is_succ=False, run_count=run_count, download_round=download_round)
             continue
@@ -196,7 +196,7 @@ def database_pipeline(pid):
                 \n\t下载均速: {file_size/spend_download_time:.2f}M/s , 上传均速: {file_size/spend_upload_time:.2f}M/s \
                 \n\tIP: {local_ip} | {public_ip}"
             logger.info(notice_text)
-            alarm_lark_text(webhook=os.getenv("NOTICE_WEBHOOK"), text=notice_text)
+            alarm_lark_text(webhook=os.getenv("LARK_NOTICE_WEBHOOK"), text=notice_text)
             youtube_sleep(is_succ=True, run_count=run_count, download_round=download_round)
         finally:
             download_round = run_count//LIMIT_LAST_COUNT + 1
