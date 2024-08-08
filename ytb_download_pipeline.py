@@ -24,6 +24,7 @@ from utils.obs import upload_file
 
 logger = logger.init_logger("main_download")
 
+SERVER_NAME = os.getenv("SERVER_NAME")
 LIMIT_FAIL_COUNT = int(os.getenv("LIMIT_FAIL_COUNT"))
 # LIMIT_FAIL_COUNT = 10
 ''' 处理失败任务限制数 '''
@@ -163,7 +164,7 @@ def database_pipeline(pid):
             local_ip = get_local_ip()
             public_ip = get_public_ip()
             notice_text = f"[Youtube Crawler | ERROR] download pipeline failed. \
-                \n\t进程ID: {pid} \
+                \n\t下载服务: {SERVER_NAME} | {pid} \
                 \n\t下载信息: 轮数 {download_round} | 处理总数 {run_count} | 连续失败数 {continue_fail_count}\
                 \n\t资源ID: {video.id} | {video.vid} \
                 \n\tSource_Link: {video.source_link} \
@@ -177,6 +178,7 @@ def database_pipeline(pid):
             # 失败过多直接退出
             if continue_fail_count > LIMIT_FAIL_COUNT:
                 logger.error(f"Pipeline > pid {pid} unexpectable exit beceuse of too much fail count: {continue_fail_count}")
+                alarm_lark_text(webhook=os.getenv("NOTICE_WEBHOOK"), text=notice_text)
                 exit()
             youtube_sleep(is_succ=False, run_count=run_count, download_round=download_round)
             continue
@@ -186,7 +188,7 @@ def database_pipeline(pid):
             local_ip = get_local_ip()
             public_ip = get_public_ip()
             notice_text = f"[Youtube Crawler | DEBUG] download pipeline succeed. \
-                \n\t进程ID: {pid} \
+                \n\t下载服务: {SERVER_NAME} | {pid} \
                 \n\t下载信息: 轮数 {download_round} | 处理总数 {run_count} | 连续失败数 {continue_fail_count} \
                 \n\tLink: {video.source_link} -> {video.cloud_path} \
                 \n\t资源共 {file_size:.2f}MB , 共处理了{format_second_to_time_string(spend_total_time)} \
