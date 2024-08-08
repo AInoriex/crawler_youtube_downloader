@@ -18,6 +18,14 @@ sleep 2
 .venv\Scripts\pip install -U https://github.com/coletdjnz/yt-dlp-youtube-oauth2/archive/refs/heads/master.zip
 
 echo "ready to add google device code"
+tree /F ./cache
+mkdir -p ./cache/yt-dlp_1
+mkdir -p ./cache/yt-dlp_2
+tree /F ./cache
 sleep 2
-#.venv\Scripts\yt-dlp --username oauth2 --cache-dir /xyh/crawler_youtube_downloader/cache/yt-dlp --output ./download https://www.youtube.com/watch?v=2mWbEZjqCYk
-.venv\Scripts\yt-dlp --username oauth2 --output ./download https://www.youtube.com/watch?v=2mWbEZjqCYk
+# .venv\Scripts\yt-dlp --username oauth2 --password '' --cache-dir ./cache/yt-dlp_1  --paths ./download/ https://www.youtube.com/watch?v=2mWbEZjqCYk
+# .venv\Scripts\yt-dlp --username oauth2 --password '' --cache-dir ./cache/yt-dlp_2  --paths ./download/ https://www.youtube.com/watch?v=2mWbEZjqCYk
+# tree /F ./cache
+
+sleep 2
+echo "scripts execute finished."

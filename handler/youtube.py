@@ -46,7 +46,7 @@ def load_options(save_audio_path:str):
             if getenv("HTTP_PROXY") != ""
             else None
         ),
-        "ratelimit": 100 * 1024 * 1024, # x * M,
+        "ratelimit": 5 * 1024 * 1024, # x * M,
         "nooverwrites": True,
         "continuedl": True, # Continue download
         # "playlistreverse": True,

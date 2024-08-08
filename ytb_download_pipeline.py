@@ -23,6 +23,7 @@ from utils.obs import upload_file
 # ---------------------
 
 logger = logger.init_logger("main_download")
+local_ip = get_local_ip()
 
 SERVER_NAME = os.getenv("SERVER_NAME")
 LIMIT_FAIL_COUNT = int(os.getenv("LIMIT_FAIL_COUNT"))
@@ -76,23 +77,23 @@ def youtube_sleep(is_succ:bool, run_count:int, download_round:int):
 
     if is_succ:
         if is_touch_fish_time():
-            random_sleep(rand_st=25, rand_range=25) #处理成功间隔25s以上
+            random_sleep(rand_st=5, rand_range=15) #处理成功间隔5s以上
         else:
-            random_sleep(rand_st=60, rand_range=30) #处理成功间隔60s以上(非摸鱼时间)
+            random_sleep(rand_st=10, rand_range=30) #处理成功间隔10s以上(非摸鱼时间)
     else:
         if is_touch_fish_time():
-            random_sleep(rand_st=60*5, rand_range=60*5) #请求失败等待05-10mins
+            random_sleep(rand_st=60*5, rand_range=60*5) #请求失败等待5mins以上
         else:
-            random_sleep(rand_st=60*10, rand_range=60*20) #请求失败等待10-30mins(非摸鱼时间)
+            random_sleep(rand_st=60*10, rand_range=60*20) #请求失败等待10mins以上(非摸鱼时间)
 
 
-def database_pipeline(pid):
+def main_pipeline(pid):
     time.sleep(30 * pid)
     logger.debug(f"Pipeline > pid {pid} started")
     wait_flag = False
-    download_round = 1      # 当前下载轮数
-    run_count = 0           # 持续处理的任务个数
-    continue_fail_count = 0 # 连续失败的任务个数
+    download_round = int(1)      # 当前下载轮数
+    run_count = int(0)           # 持续处理的任务个数
+    continue_fail_count = int(0) # 连续失败的任务个数
 
     while True:
         video = get_download_list(query_id=0)
@@ -160,9 +161,6 @@ def database_pipeline(pid):
             video.lock = 0
             update_status(video)
             # 告警
-            now_str = get_now_time_string()
-            local_ip = get_local_ip()
-            public_ip = get_public_ip()
             notice_text = f"[Youtube Crawler | ERROR] download pipeline failed. \
                 \n\t下载服务: {SERVER_NAME} | {pid} \
                 \n\t下载信息: 轮数 {download_round} | 处理总数 {run_count} | 连续失败数 {continue_fail_count}\
@@ -170,9 +168,9 @@ def database_pipeline(pid):
                 \n\tSource_Link: {video.source_link} \
                 \n\tCloud_Link: {video.cloud_path} \
                 \n\t资源共 {file_size}MB , 共处理了{format_second_to_time_string(int(time_fail-time_1))} \
-                \n\tIP: {local_ip} | {public_ip} \
+                \n\tIP: {local_ip} | {get_public_ip()} \
                 \n\tERROR: {e} \
-                \n\t告警时间: {now_str}"
+                \n\t告警时间: {get_now_time_string()}"
             logger.error(notice_text)
             alarm_lark_text(webhook=os.getenv("LARK_NOTICE_WEBHOOK"), text=notice_text)
             # 失败过多直接退出
@@ -185,8 +183,6 @@ def database_pipeline(pid):
         else:
             continue_fail_count = 0
             # 告警
-            local_ip = get_local_ip()
-            public_ip = get_public_ip()
             notice_text = f"[Youtube Crawler | DEBUG] download pipeline succeed. \
                 \n\t下载服务: {SERVER_NAME} | {pid} \
                 \n\t下载信息: 轮数 {download_round} | 处理总数 {run_count} | 连续失败数 {continue_fail_count} \
@@ -194,7 +190,7 @@ def database_pipeline(pid):
                 \n\t资源共 {file_size:.2f}MB , 共处理了{format_second_to_time_string(spend_total_time)} \
                 \n\t下载时长: {format_second_to_time_string(spend_download_time)} , 上传时长: {format_second_to_time_string(spend_upload_time)} \
                 \n\t下载均速: {file_size/spend_download_time:.2f}M/s , 上传均速: {file_size/spend_upload_time:.2f}M/s \
-                \n\tIP: {local_ip} | {public_ip}"
+                \n\tIP: {local_ip} | {get_public_ip()}"
             logger.info(notice_text)
             alarm_lark_text(webhook=os.getenv("LARK_NOTICE_WEBHOOK"), text=notice_text)
             youtube_sleep(is_succ=True, run_count=run_count, download_round=download_round)
@@ -210,7 +206,7 @@ if __name__ == "__main__":
     PROCESS_NUM = int(PROCESS_NUM)
 
     with multiprocessing.Pool(PROCESS_NUM) as pool:
-        pool.map(database_pipeline, range(PROCESS_NUM))
+        pool.map(main_pipeline, range(PROCESS_NUM))
     exit(0)
 
     # database_pipeline(0)
