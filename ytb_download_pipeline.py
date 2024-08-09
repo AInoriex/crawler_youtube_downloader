@@ -15,8 +15,8 @@ from utils.utime import random_sleep, get_now_time_string, format_second_to_time
 from utils.file import get_file_size
 from utils.lark import alarm_lark_text
 from utils.ip import get_local_ip, get_public_ip
-from utils.cos import upload_file
-# from utils.obs import upload_file
+from utils.cos import upload_file as cos_upload_file
+from utils.obs import upload_file as obs_upload_file
 
 # ---------------------
 # ---- 初始化参数 -----
@@ -33,6 +33,12 @@ LIMIT_LAST_COUNT = int(os.getenv("LIMIT_LAST_COUNT"))
 # LIMIT_LAST_COUNT = 100
 ''' 连续处理任务限制数 '''
 
+# 判断上传cos或者obs
+cloud_type = ""
+if os.getenv("OBS_ON", False) == "True":
+    cloud_type = "obs"
+else:
+    cloud_type = "cos"
 
 def detect_type(data):
     ''' 解析url链接视频来源 '''
@@ -121,10 +127,18 @@ def main_pipeline(pid):
             spend_download_time = max(time_2 - time_1, 0.01) #下载花费时间
             
             # 上传云端
-            cloud_path = urljoin(os.getenv("COS_SAVEPATH"), os.path.basename(download_path))
-            cloud_link = upload_file(
-                from_path=download_path, to_path=cloud_path
-            )
+            if cloud_type == "obs":
+                cloud_path = urljoin(os.getenv("OBS_SAVEPATH"), os.path.basename(download_path))
+                cloud_link = obs_upload_file(
+                    from_path=download_path, to_path=cloud_path
+                )
+            elif cloud_type == "cos":
+                cloud_path = urljoin(os.getenv("COS_SAVEPATH"), os.path.basename(download_path))
+                cloud_link = cos_upload_file(
+                    from_path=download_path, to_path=cloud_path
+                )
+            else:
+                raise ValueError("invalid cloud type")
             time_3 = time.time()
             spend_upload_time = max(time_3 - time_2, 0.01) #上传花费时间
             
