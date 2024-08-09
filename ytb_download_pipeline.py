@@ -78,7 +78,7 @@ def youtube_sleep(is_succ:bool, run_count:int, download_round:int):
     now_round = run_count//LIMIT_LAST_COUNT + 1
     if now_round > download_round:
         logger.info(f"Pipeline > 触发轮数限制, 当前轮数：{now_round}")
-        random_sleep(rand_st=60*20, rand_range=1) #每轮固定等20mins
+        random_sleep(rand_st=60*4, rand_range=1) #每轮固定等4mins
         return
 
     if is_succ:
@@ -88,9 +88,9 @@ def youtube_sleep(is_succ:bool, run_count:int, download_round:int):
             random_sleep(rand_st=10, rand_range=30) #处理成功间隔10s以上(非摸鱼时间)
     else:
         if is_touch_fish_time():
-            random_sleep(rand_st=60*5, rand_range=60*5) #请求失败等待5mins以上
+            random_sleep(rand_st=60*1, rand_range=60) #请求失败等待5mins以上
         else:
-            random_sleep(rand_st=60*10, rand_range=60*20) #请求失败等待10mins以上(非摸鱼时间)
+            random_sleep(rand_st=60*2, rand_range=60) #请求失败等待10mins以上(非摸鱼时间)
 
 
 def main_pipeline(pid):
