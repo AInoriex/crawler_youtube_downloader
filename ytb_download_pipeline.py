@@ -15,8 +15,8 @@ from utils.utime import random_sleep, get_now_time_string, format_second_to_time
 from utils.file import get_file_size
 from utils.lark import alarm_lark_text
 from utils.ip import get_local_ip, get_public_ip
-# from utils.cos import upload_file
-from utils.obs import upload_file
+from utils.cos import upload_file
+# from utils.obs import upload_file
 
 # ---------------------
 # ---- 初始化参数 -----
@@ -121,7 +121,7 @@ def main_pipeline(pid):
             spend_download_time = max(time_2 - time_1, 0.01) #下载花费时间
             
             # 上传云端
-            cloud_path = urljoin(os.getenv("OBS_SAVEPATH"), os.path.basename(download_path))
+            cloud_path = urljoin(os.getenv("COS_SAVEPATH"), os.path.basename(download_path))
             cloud_link = upload_file(
                 from_path=download_path, to_path=cloud_path
             )
