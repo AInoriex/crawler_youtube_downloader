@@ -166,8 +166,9 @@ def download_by_playlist(playlist_url, save_path, max_limit=0):
 
 # 格式化链接保留参数v
 # exp.  url:https://www.youtube.com/watch?v=6s416NmSFmw&list=PLRMEKqidcRnAGC6j1oYPFV9E26gyWdgU4&index=4
-#       out: https://www.youtube.com/watch?v=6s416NmSFmw
-def format_into_watch_url(url:str)->str:
+#       out: 6s416NmSFmw, https://www.youtube.com/watch?v=6s416NmSFmw
+def format_into_watch_url(url:str):
+    vid = str("")
     try:
         # 解析URL
         parsed_url = urlparse(url)
@@ -177,7 +178,8 @@ def format_into_watch_url(url:str)->str:
         if len(query_params) > 1:
             # 保留查询参数中的v
             if 'v' in query_params:
-                new_query_params = {'v': query_params['v']}
+                vid = query_params['v'][0]
+                new_query_params = {'v': vid}
             else:
                 raise ValueError
             
@@ -188,15 +190,16 @@ def format_into_watch_url(url:str)->str:
             new_url = urlunparse(parsed_url._replace(query=new_query_string))
         else:
             if 'v' in query_params:
+                vid = str(query_params['v'][0])
                 new_url = url
             else:
                 raise ValueError
     except Exception as e:
         print(f"Yt-dlp > format_into_watch_url failed, url:{url}, error:{e.__str__}")
-        return ""
+        return vid, ""
     else:
         # print(f"format_into_watch_url succeed, url:{url}")
-        return new_url
+        return vid, new_url;
 
 
 def try_to_get_file_name(save_dir:str, vid:str, default_name='')->str:

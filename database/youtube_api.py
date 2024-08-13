@@ -20,20 +20,20 @@ def get_download_list(query_id=0)->Video|None:
     if len(resp_json["data"]["result"]) <= 0:
         # print("Ytb_db_api > Nothing to get.")
         return None
-    resp_data = resp_json["data"]["result"][0]
+    resp_data:dict = resp_json["data"]["result"][0]
     video = Video(
-        id=resp_data["id"],
-        vid=resp_data["vid"],
-        position=resp_data["position"],
-        source_type=resp_data["source_type"],
-        source_link=resp_data["source_link"],
-        duration=resp_data["duration"],
-        cloud_type=resp_data["cloud_type"],
-        cloud_path=resp_data["cloud_path"],
-        language=resp_data["language"],
-        status=resp_data["status"],
-        lock=resp_data["lock"],
-        info=resp_data["info"],
+        id=resp_data.get("id", 0),
+        vid=resp_data.get("vid", ""),
+        position=resp_data.get("position", 0),
+        source_type=resp_data.get("source_type", 0),
+        source_link=resp_data.get("source_link", ""),
+        duration=resp_data.get("duration", 0),
+        cloud_type=resp_data.get("cloud_type", 0),
+        cloud_path=resp_data.get("cloud_path", ""),
+        language=resp_data.get("language", ""),
+        status=resp_data.get("status", 0),
+        lock=resp_data.get("lock", 0),
+        info=resp_data.get("info", ""),
     )
     return video
 

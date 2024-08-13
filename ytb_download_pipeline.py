@@ -2,11 +2,11 @@
 from dotenv import load_dotenv
 load_dotenv()
 
-import os
-import time
+from os import getenv, walk, path, remove
+from time import time, sleep
 from urllib.parse import urljoin
 from handler.youtube import format_into_watch_url, is_touch_fish_time
-from handler.youtube import download as ytb_download
+from handler.youtube import download as ytb_download, make_path
 # from handler.bilibili import download as bilibili_download
 # from handler.ximalaya import download as ximalaya_download
 from database.youtube_api import get_download_list, update_status
@@ -25,17 +25,17 @@ from utils.obs import upload_file as obs_upload_file
 logger = logger.init_logger("main_download")
 local_ip = get_local_ip()
 
-SERVER_NAME = os.getenv("SERVER_NAME")
-LIMIT_FAIL_COUNT = int(os.getenv("LIMIT_FAIL_COUNT"))
+SERVER_NAME = getenv("SERVER_NAME")
+LIMIT_FAIL_COUNT = int(getenv("LIMIT_FAIL_COUNT"))
 # LIMIT_FAIL_COUNT = 10
 ''' 处理失败任务限制数 '''
-LIMIT_LAST_COUNT = int(os.getenv("LIMIT_LAST_COUNT"))
+LIMIT_LAST_COUNT = int(getenv("LIMIT_LAST_COUNT"))
 # LIMIT_LAST_COUNT = 100
 ''' 连续处理任务限制数 '''
 
 # 判断上传cos或者obs
 cloud_type = ""
-if os.getenv("OBS_ON", False) == "True":
+if getenv("OBS_ON", False) == "True":
     cloud_type = "obs"
 else:
     cloud_type = "cos"
@@ -57,7 +57,7 @@ def download(full_url):
         logger.error(f"Failed to detect item type: {full_url}")
         return None
     elif item_type == "youtube":
-        download_path = ytb_download(full_url, os.getenv('DOWNLOAD_PATH'))
+        download_path = ytb_download(full_url, getenv('DOWNLOAD_PATH'))
         logger.info(f"Downloaded youtube audio to {download_path}")
     elif item_type == "bilibili":
         pass
@@ -92,9 +92,29 @@ def youtube_sleep(is_succ:bool, run_count:int, download_round:int):
         else:
             random_sleep(rand_st=60*2, rand_range=60) #请求失败等待10mins以上(非摸鱼时间)
 
+def clean_temp_files(vid:str):
+    ''' 清理临时文件 '''
+    if vid == "":
+        logger.warn("clean_temp_files > vid is null, skip cleanning.")
+        return
+
+    try:
+        audio_path, _ = make_path(getenv('DOWNLOAD_PATH'))
+        for dirpath, dirnames, filenames in walk(audio_path):
+            for filename in filenames:
+                full_path = path.join(dirpath, filename)
+                if vid in filename:
+                    print(f"clean_temp_files > 清理该批次临时文件：{full_path}")
+                    remove(full_path)
+    except Exception as e:
+        print(f"clean_temp_files > 清理临时文件失败：{e.__str__}")
+    finally:
+        return
+    
+
 
 def main_pipeline(pid):
-    time.sleep(30 * pid)
+    sleep(30 * pid)
     logger.debug(f"Pipeline > pid {pid} started")
     wait_flag = False
     download_round = int(1)      # 当前下载轮数
@@ -118,28 +138,29 @@ def main_pipeline(pid):
         try:
             run_count += 1
             logger.info(f"Pipeline > pid {pid} processing {id} -- {link}, 轮数 {download_round} | 处理数 {run_count}")
-            time_1 = time.time()
+            time_1 = time()
 
             # 下载(本地存在不会被覆盖，续传)
-            link = format_into_watch_url(link)
+            _return_tuple = format_into_watch_url(link)
+            _vid, link = _return_tuple
             download_path = download(link)
-            time_2 = time.time()
+            time_2 = time()
             spend_download_time = max(time_2 - time_1, 0.01) #下载花费时间
             
             # 上传云端
             if cloud_type == "obs":
-                cloud_path = urljoin(os.getenv("OBS_SAVEPATH"), os.path.basename(download_path))
+                cloud_path = urljoin(getenv("OBS_SAVEPATH"), path.basename(download_path))
                 cloud_link = obs_upload_file(
                     from_path=download_path, to_path=cloud_path
                 )
             elif cloud_type == "cos":
-                cloud_path = urljoin(os.getenv("COS_SAVEPATH"), os.path.basename(download_path))
+                cloud_path = urljoin(getenv("COS_SAVEPATH"), path.basename(download_path))
                 cloud_link = cos_upload_file(
                     from_path=download_path, to_path=cloud_path
                 )
             else:
                 raise ValueError("invalid cloud type")
-            time_3 = time.time()
+            time_3 = time()
             spend_upload_time = max(time_3 - time_2, 0.01) #上传花费时间
             
             # 更新数据库
@@ -157,7 +178,7 @@ def main_pipeline(pid):
             )
             
             # 移除本地文件
-            os.remove(download_path)
+            remove(download_path)
 
         except KeyboardInterrupt:
             logger.warning(f"Pipeline > pid {pid} interrupted processing {id}, reverting...")
@@ -167,7 +188,7 @@ def main_pipeline(pid):
             break
         except Exception as e:
             continue_fail_count += 1
-            time_fail = time.time()
+            time_fail = time()
             logger.error(f"Pipeline > pid {pid} error processing {id}")
             logger.error(e, stack_info=True)
             # 任务回调
@@ -186,11 +207,11 @@ def main_pipeline(pid):
                 \n\tERROR: {e} \
                 \n\t告警时间: {get_now_time_string()}"
             logger.error(notice_text)
-            alarm_lark_text(webhook=os.getenv("LARK_NOTICE_WEBHOOK"), text=notice_text)
+            alarm_lark_text(webhook=getenv("LARK_NOTICE_WEBHOOK"), text=notice_text)
             # 失败过多直接退出
             if continue_fail_count > LIMIT_FAIL_COUNT:
                 logger.error(f"Pipeline > pid {pid} unexpectable exit beceuse of too much fail count: {continue_fail_count}")
-                alarm_lark_text(webhook=os.getenv("LARK_ERROR_WEBHOOK"), text=notice_text)
+                alarm_lark_text(webhook=getenv("LARK_ERROR_WEBHOOK"), text=notice_text)
                 exit()
             youtube_sleep(is_succ=False, run_count=run_count, download_round=download_round)
             continue
@@ -206,21 +227,22 @@ def main_pipeline(pid):
                 \n\t下载均速: {file_size/spend_download_time:.2f}M/s , 上传均速: {file_size/spend_upload_time:.2f}M/s \
                 \n\tIP: {local_ip} | {get_public_ip()}"
             logger.info(notice_text)
-            alarm_lark_text(webhook=os.getenv("LARK_NOTICE_WEBHOOK"), text=notice_text)
+            alarm_lark_text(webhook=getenv("LARK_NOTICE_WEBHOOK"), text=notice_text)
             youtube_sleep(is_succ=True, run_count=run_count, download_round=download_round)
         finally:
             download_round = run_count//LIMIT_LAST_COUNT + 1
+            # clean_temp_files(vid)
 
 
 if __name__ == "__main__":
     import multiprocessing
     from sys import exit
     # PROCESS_NUM = 1 #同时处理的进程数量
-    PROCESS_NUM = os.getenv("PROCESS_NUM")
+    PROCESS_NUM = getenv("PROCESS_NUM")
     PROCESS_NUM = int(PROCESS_NUM)
 
     with multiprocessing.Pool(PROCESS_NUM) as pool:
         pool.map(main_pipeline, range(PROCESS_NUM))
     exit(0)
 
-    # database_pipeline(0)
+    # main_pipeline(0)
