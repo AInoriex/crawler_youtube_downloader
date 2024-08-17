@@ -22,6 +22,6 @@ Write-Host "=== Please check the configs of '.env', and confirm to run Python sc
 Pause
 
 # 执行python脚本
-python "$rootDir\ytb_download_pipeline.py.py"
+python "$rootDir\ytb_download_pipeline.py"
 
 Pause
