@@ -106,29 +106,32 @@ def download(url, save_path):
 # exp.  https://www.youtube.com/watch?v=6s416NmSFmw&list
 def download_by_watch_url(video_url, save_path, __retry=MAX_RETRY):
     print(f"Yt-dlp > download_by_watch_url参数 video_url:{video_url} save_path:{save_path} retry:{__retry}")
+    __vid = ""
     try:
         save_audio_path, save_info_path = make_path(save_path)
         ydl_opts = load_options(save_audio_path)
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
             info_dict = generate_video_info(video_url, ydl)
-            vid = info_dict["id"]
-            save_to_json_file = f"{save_info_path}/{vid}.json"
-
-            ydl.download(vid)
+            __vid = info_dict["id"]
+            save_to_json_file = f"{save_info_path}/{__vid}.json"
+            ydl.download(__vid)
             dump_info(info_dict, save_to_json_file)
             print(f"Yt-dlp > download_by_watch_url生成下载信息：{save_to_json_file}")
     except Exception as e:
         if __retry > 0:
+            if "Video unavailable" in e.msg: # 账号不可使用
+                print(f"Yt-dlp > [!] 账号可能无法使用，请换号重试")
+                __retry = 1
             __retry = __retry - 1
             random_sleep(rand_st=5, rand_range=5)
             return download_by_watch_url(video_url, save_path, __retry=__retry)
         else:
-            save_to_fail_file = f"{save_info_path}/{vid}.fail.json"
-            dump_info(info_dict, save_to_fail_file)
+            if __vid != "":
+                save_to_fail_file = f"{save_info_path}/{__vid}.fail.json"
+                dump_info(info_dict, save_to_fail_file)
             raise e
     else:
-        # return path.join(save_audio_path, f"{vid}.webm")
-        return try_to_get_file_name(save_audio_path, vid, path.join(save_audio_path, f"{vid}.mp4"))
+        return try_to_get_file_name(save_audio_path, __vid, path.join(save_audio_path, f"{__vid}.mp4"))
 
 # 下载油管播放列表链接
 # exp.  

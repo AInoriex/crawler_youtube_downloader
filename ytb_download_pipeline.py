@@ -7,6 +7,7 @@ from time import time, sleep
 from urllib.parse import urljoin
 from handler.youtube import format_into_watch_url, is_touch_fish_time
 from handler.youtube import download as ytb_download, make_path
+from handler.language import GetLanguageCloudSavePath
 # from handler.bilibili import download as bilibili_download
 # from handler.ximalaya import download as ximalaya_download
 from database.youtube_api import get_download_list, update_status
@@ -26,19 +27,17 @@ logger = logger.init_logger("main_download")
 local_ip = get_local_ip()
 
 SERVER_NAME = getenv("SERVER_NAME")
+''' 处理失败任务限制数 '''
 LIMIT_FAIL_COUNT = int(getenv("LIMIT_FAIL_COUNT"))
 # LIMIT_FAIL_COUNT = 10
 ''' 处理失败任务限制数 '''
 LIMIT_LAST_COUNT = int(getenv("LIMIT_LAST_COUNT"))
 # LIMIT_LAST_COUNT = 100
 ''' 连续处理任务限制数 '''
+CLOUD_TYPE = "obs" if getenv("OBS_ON", False) == "True" else "cos"
+''' 云端存储类别，上传cos或者obs '''
 
-# 判断上传cos或者obs
-cloud_type = ""
-if getenv("OBS_ON", False) == "True":
-    cloud_type = "obs"
-else:
-    cloud_type = "cos"
+# ---------------------
 
 def detect_type(data):
     ''' 解析url链接视频来源 '''
@@ -110,8 +109,6 @@ def clean_temp_files(vid:str):
         print(f"clean_temp_files > 清理临时文件失败：{e.__str__}")
     finally:
         return
-    
-
 
 def main_pipeline(pid):
     sleep(30 * pid)
@@ -148,13 +145,27 @@ def main_pipeline(pid):
             spend_download_time = max(time_2 - time_1, 0.01) #下载花费时间
             
             # 上传云端
-            if cloud_type == "obs":
-                cloud_path = urljoin(getenv("OBS_SAVEPATH"), path.basename(download_path))
+            if CLOUD_TYPE == "obs":
+                # cloud_path = urljoin(getenv("OBS_SAVEPATH"), path.basename(download_path))
+                cloud_path = urljoin(
+                    GetLanguageCloudSavePath(
+                        src_path=getenv("OBS_SAVEPATH"),
+                        lang_key=video.language
+                    ), 
+                    path.basename(download_path)
+                )
                 cloud_link = obs_upload_file(
                     from_path=download_path, to_path=cloud_path
                 )
-            elif cloud_type == "cos":
-                cloud_path = urljoin(getenv("COS_SAVEPATH"), path.basename(download_path))
+            elif CLOUD_TYPE == "cos":
+                # cloud_path = urljoin(getenv("COS_SAVEPATH"), path.basename(download_path))
+                cloud_path = urljoin(
+                    GetLanguageCloudSavePath(
+                        src_path=getenv("COS_SAVEPATH"),
+                        lang_key=video.language
+                    ), 
+                    path.basename(download_path)
+                )
                 cloud_link = cos_upload_file(
                     from_path=download_path, to_path=cloud_path
                 )
@@ -165,7 +176,7 @@ def main_pipeline(pid):
             
             # 更新数据库
             video.status = 2 # upload done
-            video.cloud_type = 2 # 1:cos 2:obs
+            video.cloud_type = 2 if CLOUD_TYPE == "obs" else 1 # 1:cos 2:obs
             video.cloud_path = cloud_link
             update_status(video)
             
@@ -202,7 +213,7 @@ def main_pipeline(pid):
                 \n\t资源ID: {video.id} | {video.vid} \
                 \n\tSource_Link: {video.source_link} \
                 \n\tCloud_Link: {video.cloud_path} \
-                \n\t资源共 {file_size}MB , 共处理了{format_second_to_time_string(int(time_fail-time_1))} \
+                \n\t共处理了{format_second_to_time_string(int(time_fail-time_1))} \
                 \n\tIP: {local_ip} | {get_public_ip()} \
                 \n\tERROR: {e} \
                 \n\t告警时间: {get_now_time_string()}"

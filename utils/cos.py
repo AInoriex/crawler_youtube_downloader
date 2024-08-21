@@ -19,7 +19,7 @@ scheme = 'https'            # 指定使用 http/https 协议来访问 COS，默�
 config = CosConfig(Region=cos_region, SecretId=secret_id, SecretKey=secret_key, Token=token, Scheme=scheme)
 client = CosS3Client(config)
 logger.info(
-    "cos init  client succeed. %s", client.get_conf().get_host(Bucket=os.getenv("COS_BUCKET"))
+    "cos init client succeed. %s", client.get_conf().get_host(Bucket=os.getenv("COS_BUCKET"))
 )
 
 # 高级上传接口（推荐）
