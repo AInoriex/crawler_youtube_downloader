@@ -77,19 +77,19 @@ def youtube_sleep(is_succ:bool, run_count:int, download_round:int):
     now_round = run_count//LIMIT_LAST_COUNT + 1
     if now_round > download_round:
         logger.info(f"Pipeline > 触发轮数限制, 当前轮数：{now_round}")
-        random_sleep(rand_st=60*4, rand_range=1) #每轮固定等4mins
+        random_sleep(rand_st=60*2, rand_range=1) #每轮固定等2mins
         return
 
     if is_succ:
         if is_touch_fish_time():
-            random_sleep(rand_st=5, rand_range=15) #处理成功间隔5s以上
+            random_sleep(rand_st=5, rand_range=10) #处理成功间隔5s以上
         else:
-            random_sleep(rand_st=10, rand_range=30) #处理成功间隔10s以上(非摸鱼时间)
+            random_sleep(rand_st=10, rand_range=10) #处理成功间隔10s以上(非摸鱼时间)
     else:
         if is_touch_fish_time():
-            random_sleep(rand_st=60*1, rand_range=60) #请求失败等待5mins以上
+            random_sleep(rand_st=30, rand_range=30) #请求失败等待0.5mins以上
         else:
-            random_sleep(rand_st=60*2, rand_range=60) #请求失败等待10mins以上(非摸鱼时间)
+            random_sleep(rand_st=60, rand_range=30) #请求失败等待1mins以上(非摸鱼时间)
 
 def clean_temp_files(vid:str):
     ''' 清理临时文件 '''
