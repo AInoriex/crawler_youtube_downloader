@@ -1,3 +1,7 @@
+# 加载.env文件
+from dotenv import load_dotenv
+load_dotenv()
+
 from sys import argv
 from os import path, makedirs, getenv
 from time import time, sleep
