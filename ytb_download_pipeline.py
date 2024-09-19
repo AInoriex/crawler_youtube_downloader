@@ -5,8 +5,7 @@ load_dotenv()
 from os import getenv, walk, path, remove
 from time import time, sleep
 from urllib.parse import urljoin
-from handler.youtube import format_into_watch_url, is_touch_fish_time
-from handler.youtube import download as ytb_download, make_path
+from handler.youtube import format_into_watch_url, is_touch_fish_time, download_by_watch_url, make_path
 from handler.language import GetLanguageCloudSavePath
 # from handler.bilibili import download as bilibili_download
 # from handler.ximalaya import download as ximalaya_download
@@ -38,39 +37,6 @@ CLOUD_TYPE = "obs" if getenv("OBS_ON", False) == "True" else "cos"
 ''' 云端存储类别，上传cos或者obs '''
 
 # ---------------------
-
-def detect_type(data):
-    ''' 解析url链接视频来源 '''
-    # bilibili, youtube, ximalaya
-    keywords = ["bilibili", "youtube", "ximalaya", "xmcdn"]
-    for keyword in keywords:
-        if keyword in data:
-            return keyword
-    return None
-
-def download(full_url):
-    ''' 下载url链接资源 '''
-    logger.info(f"当前下载链接：{full_url}")
-    item_type = detect_type(full_url)
-    if item_type is None:
-        logger.error(f"Failed to detect item type: {full_url}")
-        return None
-    elif item_type == "youtube":
-        download_path = ytb_download(full_url, getenv('DOWNLOAD_PATH'))
-        logger.info(f"Downloaded youtube audio to {download_path}")
-    elif item_type == "bilibili":
-        pass
-        # audio_path = bilibili_download(full_url, cfg["common"]["download_path"])
-        logger.info(f"Downloaded bilibili audio to {download_path}")
-    elif item_type == "ximalaya" or item_type == "xmcdn":
-        pass
-        # audio_path = ximalaya_download(
-        #     full_url,
-        #     cfg["common"]["download_path"],
-        #     is_xmcdn=item_type == "xmcdn",
-        # )
-        logger.info(f"Downloaded ximalaya audio to {download_path}")
-    return download_path
 
 def youtube_sleep(is_succ:bool, run_count:int, download_round:int):
     """ 油管下载间隔等待规则 """
@@ -140,7 +106,7 @@ def main_pipeline(pid):
             # 下载(本地存在不会被覆盖，续传)
             _return_tuple = format_into_watch_url(link)
             _vid, link = _return_tuple
-            download_path = download(link)
+            download_path = download_by_watch_url(url=link, save_path=getenv('DOWNLOAD_PATH'))
             time_2 = time()
             spend_download_time = max(time_2 - time_1, 0.01) #下载花费时间
             

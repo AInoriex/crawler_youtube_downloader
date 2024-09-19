@@ -1,5 +1,3 @@
-import time
-import random
 from os import path, makedirs, walk, getenv
 from handler.info import dump_info
 from utils.utime import random_sleep
@@ -9,24 +7,25 @@ from urllib.parse import urlparse, parse_qs, urlencode, urlunparse
 from datetime import datetime
 import pytz
 
-MAX_RETRY = int(getenv("YTB_MAX_RETRY"))
-
-# 预创建下载目录
-# |—— audio
-# |—— info
 def make_path(save_path):
+    ''' 预创建下载目录 '''
+    # |—— audio
+    # |—— info
     save_audio_path = path.join(save_path, "audio")
     save_info_path = path.join(save_path, "info")
     makedirs(save_audio_path, exist_ok=True)
     makedirs(save_info_path, exist_ok=True)
     return save_audio_path, save_info_path
 
-def yt_dlp_monitor(self, d):
-    final_filename = d.get('info_dict').get('_filename')
-    # You could also just assign `d` here to access it and see all the data or even `print(d)` as it updates frequently
+# 下载单个视频或者播放列表
+def download_url(url, save_path):
+    if "watch" in url:
+        return download_by_watch_url(url, save_path)
+    else:
+        return download_by_playlist_url(url, save_path)
 
-# 配置yt_dlp下载模式
 def load_options(save_audio_path:str):
+    ''' 配置yt_dlp下载模式 '''
     # See help(yt_dlp.postprocessor) for a list of available Postprocessors and their arguments
     # See details at https://github.com/yt-dlp/yt-dlp/blob/master/yt_dlp/YoutubeDL.py
     DEBUG_MODE = getenv("YTB_DEBUG", False) == "True"
@@ -76,8 +75,8 @@ def load_options(save_audio_path:str):
         "cachedir": OAUTH2_PATH, # Location of the cache files in the filesystem. False to disable filesystem cache.
     }
 
-# 生成视频信息（yt_dlp只获取信息不下载）
 def generate_video_info(vid, ydl:YoutubeDL):
+    ''' 生成视频信息（yt_dlp只获取信息不下载） '''
     video_info = ydl.extract_info(vid, download=False, process=False)
 
     info_dict = {
@@ -95,17 +94,9 @@ def generate_video_info(vid, ydl:YoutubeDL):
     }
     return info_dict
 
-# 下载单个视频或者播放列表
-def download(url, save_path):
-    if "watch" in url:
-        return download_by_watch_url(url, save_path)
-    else:
-        return download_by_playlist(url, save_path)
-
-# 下载普通油管链接(支持只有请求参数v)
-# exp.  https://www.youtube.com/watch?v=6s416NmSFmw&list
-def download_by_watch_url(video_url, save_path, __retry=MAX_RETRY):
-    print(f"Yt-dlp > download_by_watch_url参数 video_url:{video_url} save_path:{save_path} retry:{__retry}")
+def download_by_watch_url(video_url, save_path, retry=int(getenv("YTB_MAX_RETRY"))):
+    ''' 下载油管单个视频 https://www.youtube.com/watch?v=xxx '''
+    print(f"Yt-dlp > download_by_watch_url参数 video_url:{video_url} save_path:{save_path} retry:{retry}")
     __vid = ""
     try:
         save_audio_path, save_info_path = make_path(save_path)
@@ -118,13 +109,13 @@ def download_by_watch_url(video_url, save_path, __retry=MAX_RETRY):
             dump_info(info_dict, save_to_json_file)
             print(f"Yt-dlp > download_by_watch_url生成下载信息：{save_to_json_file}")
     except Exception as e:
-        if __retry > 0:
+        if retry > 0:
             if "Video unavailable" in e.msg: # 账号不可使用
                 print(f"Yt-dlp > [!] 账号可能无法使用，请换号重试")
-                __retry = 1
-            __retry = __retry - 1
+                retry = 1
+            retry = retry - 1
             random_sleep(rand_st=5, rand_range=5)
-            return download_by_watch_url(video_url, save_path, __retry=__retry)
+            return download_by_watch_url(video_url, save_path, retry=retry)
         else:
             if __vid != "":
                 save_to_fail_file = f"{save_info_path}/{__vid}.fail.json"
@@ -133,44 +124,64 @@ def download_by_watch_url(video_url, save_path, __retry=MAX_RETRY):
     else:
         return try_to_get_file_name(save_audio_path, __vid, path.join(save_audio_path, f"{__vid}.mp4"))
 
-# 下载油管播放列表链接
-# exp.  
-def download_by_playlist(playlist_url, save_path, max_limit=0):
-    save_audio_path, save_info_path = make_path(save_path)
-
-    success_num = 0
-    ydl_opts = load_options(save_audio_path)
+def download_by_playlist_url(playlist_url:str, save_path:str, ydl_opts={}, max_limit=0, retry=int(getenv("YTB_MAX_RETRY")), fail_limit=int(getenv("YTB_FAIL_COUNT"))):
+    ''' 下载油管播放列表playlist到本地 https://www.youtube.com/playlist?list=xxx '''
+    # 手动获取playlist title
+    playlist_title = get_ytb_playlist_title(playlist_url)  # 获取播放列表标题
+    save_path = path.join(save_path, playlist_title)  # 创建以播放列表标题命名的目录
+    print(f"download_by_playlist_v2 > 保存目录在:{save_path}")
+    makedirs(save_path, exist_ok=True)  # 确保目录存在
+    # 使用yt-dlp识别playlist title
+    # ydl_opts["outtmpl"] = path.join(save_path, "%(id)s.%(ext)s")
+    # save_path = path.join(save_path, "%(playlist)s", "%(playlist_index)s-%(title)s.%(ext)s")
+    
+    if ydl_opts == {}:
+        ydl_opts = load_options(save_path)
+    success_count = 0
+    fail_count = 0
     result_paths = []
     with yt_dlp.YoutubeDL(ydl_opts) as ydl:
         author_info = ydl.extract_info(playlist_url, download=False, process=False)
-
         for entry in author_info["entries"]:
-            if success_num >= max_limit and max_limit != 0:
-                print("Yt-dlp > YouTube: Successfully downloaded",
+            if max_limit != 0 and success_count >= max_limit:
+                print("download_by_playlist_url > YouTube触发下载条数限制:",
                     max_limit,
                     "video(s). Quitting.",
                 )
                 break
             vid = entry["id"]
-            info_dict = generate_video_info(vid, ydl)
-
-            save_to_json_file = f"{save_info_path}/{vid}.json"
-            try:
-                ydl.download(vid)
-                time.sleep(random.uniform(5, 10))  # sleep in case got banned by YouTube
-                dump_info(info_dict, save_to_json_file)
-                result_paths.append(path.join(save_audio_path, f"{vid}.webm"))
-                success_num += 1
-            except Exception as e:
-                print("Yt-dlp >  YouTube: \033[31mEXCEPTION OCCURED.\033[0m")
-                print(e)
-                continue
+            print(f"download_by_playlist_url > 当前视频链接： https://www.youtube.com/watch?v={vid}")
+            while True:
+                try:
+                    ydl.download(vid)
+                except Exception as e:
+                    fail_count += 1
+                    print(f"download_by_playlist_url > 下载视频失败 {e} | retry: {retry} | fail: {fail_count}")
+                    if fail_count > fail_limit:
+                        raise SystemError(f"download_by_playlist_url failed to much:{fail_count}, {e}")
+                    continue
+                else:
+                    success_count += 1
+                    fail_count = 0
+                    name = path.join(save_path, f"{vid}.mp4")
+                    result_paths.append(name)
+                    print(f"download_by_playlist_url > 下载视频成功 {name}")
+                    break
+                finally:
+                    retry -= 1
+                    if retry <= 0:
+                        print(f"download_by_playlist_url > 重试过多退出取消下载 https://www.youtube.com/watch?v={vid}")
+                        break
+                    random_sleep(rand_st=5, rand_range=5)
+    print(f"download_by_playlist_url > 该列表下载完毕，成功: {success_count}条")
     return result_paths
 
-# 格式化链接保留参数v
-# exp.  url:https://www.youtube.com/watch?v=6s416NmSFmw&list=PLRMEKqidcRnAGC6j1oYPFV9E26gyWdgU4&index=4
-#       out: 6s416NmSFmw, https://www.youtube.com/watch?v=6s416NmSFmw
 def format_into_watch_url(url:str):
+    '''
+    @Desc   格式化链接保留参数v
+    @Params url:https://www.youtube.com/watch?v=6s416NmSFmw&list=PLRMEKqidcRnAGC6j1oYPFV9E26gyWdgU4&index=4
+    @Return 6s416NmSFmw, https://www.youtube.com/watch?v=6s416NmSFmw
+    '''
     vid = str("")
     try:
         # 解析URL
@@ -204,7 +215,6 @@ def format_into_watch_url(url:str):
         # print(f"format_into_watch_url succeed, url:{url}")
         return vid, new_url;
 
-
 def try_to_get_file_name(save_dir:str, vid:str, default_name='')->str:
     ''' 尝试获取下载文件名 '''
     ret_name = ""
@@ -222,7 +232,6 @@ def try_to_get_file_name(save_dir:str, vid:str, default_name='')->str:
         ret_name = default_name
     print(f"try_to_get_file_name > 获取到本地资源文件{ret_name}")
     return ret_name
-
 
 def is_touch_fish_time()->bool:
     ''' 判断是否能摸鱼，以Youtube总部地区为限制 '''
@@ -246,3 +255,15 @@ def is_touch_fish_time()->bool:
     else:
         print(f"[√] 摸鱼时间 > 当地时区 {ytb_timezone} | 当地时间 {current_hour}:{current_mint}")
         return True
+
+def get_ytb_playlist_title(playlist_url:str, ydl_opts={}):
+    '''
+    @Desc     获取播放列表标题
+    @Return   info['title'] | empty string
+    '''
+    with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+        info = ydl.extract_info(playlist_url, download=False, process=False)
+        # print(f"Info: {info}")
+        title = info.get("title", "")
+        print(f"get_ytb_playlist_title > Playlist Title: {title}")
+    return title

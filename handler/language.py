@@ -12,6 +12,9 @@ def GetLanguageCloudSavePath(src_path:str, lang_key:str)->str:
         "id": "Yinniyu", # 印尼语
         "ms": "Malaiyu", # 马来语
         "fil": "Feilvbinyu", # 菲律宾语
+        "en": "English", # 英语
+        "zh": "Zhongwen", # 中文
+        "unknown": "Unclassify" # 未知
     }
     if "{LANGUAGE}" in src_path:
         ret_path = src_path.format(LANGUAGE=LANGUAGE_PATH_DICT.get(lang_key, "Unclassify"))
