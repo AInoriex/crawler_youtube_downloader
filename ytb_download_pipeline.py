@@ -106,7 +106,7 @@ def main_pipeline(pid):
             # 下载(本地存在不会被覆盖，续传)
             _return_tuple = format_into_watch_url(link)
             _vid, link = _return_tuple
-            download_path = download_by_watch_url(url=link, save_path=getenv('DOWNLOAD_PATH'))
+            download_path = download_by_watch_url(video_url=link, save_path=getenv('DOWNLOAD_PATH'))
             time_2 = time()
             spend_download_time = max(time_2 - time_1, 0.01) #下载花费时间
             
