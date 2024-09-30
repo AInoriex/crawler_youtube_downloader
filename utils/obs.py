@@ -33,6 +33,8 @@ def callback(transferredAmount, totalAmount, totalSeconds):
 
 # 上传
 def upload_file(from_path:str, to_path:str)->str:
+    if to_path.startswith("/"):
+        to_path = to_path.replace("/", "", 1)
     try:
         # 创建obsClient实例
         # 如果使用临时AKSK和SecurityToken访问OBS，需要在创建实例时通过security_token参数指定securityToken值
@@ -48,7 +50,7 @@ def upload_file(from_path:str, to_path:str)->str:
         # 待上传文件/文件夹的完整路径，如aa/bb.txt，或aa/
         # file_path = 'download/test.txt'
         file_path = from_path
-        # 上传文件的自定义元数据
+        # 【可选】上传文件的自定义元数据
         # metadata = {'meta1': 'value1', 'meta2': 'value2'}
         # 文件上传
         resp = obsClient.putFile(bucketName, objectKey, file_path, metadata=None, headers=headers, progressCallback=callback)

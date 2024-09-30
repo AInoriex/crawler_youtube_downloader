@@ -51,7 +51,10 @@ def DatabaseCURDTest():
     dao.uploaded_download(id=id, cloud_type="obs", cloud_path=link)
 
 def DatabaseApisTest():
-    v = youtube_api.get_download_list()
+    v = youtube_api.get_video_for_download(
+        query_id=0,
+        query_source_type=0
+    )
     if v is None:
         print("Nothing to get")
         return
@@ -59,7 +62,7 @@ def DatabaseApisTest():
 
     v.cloud_type = 2
     v.cloud_path = "www.google.com"
-    youtube_api.update_status(v)
+    youtube_api.update_video_record(v)
 
 def ObsUploadTest():
     from_path = str("C:\\Users\\AInoriex\\Pictures\\faceswap_photos\\")

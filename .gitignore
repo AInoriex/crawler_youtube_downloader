@@ -6,5 +6,6 @@ conf/*
 download/*
 .venv/
 .env
+.vscode/
 temp/
 cache/

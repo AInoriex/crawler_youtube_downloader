@@ -68,7 +68,6 @@
    COS_SAVEPATH=***COS_SAVEPATH***
    
    # YOUTUBE CONFIG
-   YTB_DEBUG=True # ATTENTION
    YTB_MAX_RETRY=25
    YTB_OAUTH2_PATH=/tmp/cache/yt-dlp_account_1
    ```

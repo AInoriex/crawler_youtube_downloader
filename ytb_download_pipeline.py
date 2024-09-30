@@ -2,14 +2,14 @@
 from dotenv import load_dotenv
 load_dotenv()
 
+import json
 from os import getenv, walk, path, remove
 from time import time, sleep
 from urllib.parse import urljoin
-from handler.youtube import format_into_watch_url, is_touch_fish_time, download_by_watch_url, make_path
-from handler.language import GetLanguageCloudSavePath
+from handler.youtube import is_touch_fish_time, download_by_watch_url, get_cloud_save_path_by_language
 # from handler.bilibili import download as bilibili_download
 # from handler.ximalaya import download as ximalaya_download
-from database.youtube_api import get_download_list, update_status
+from database.youtube_api import get_video_for_download, update_video_record
 from utils import logger
 from utils.utime import random_sleep, get_now_time_string, format_second_to_time_string
 from utils.file import get_file_size
@@ -35,6 +35,8 @@ LIMIT_LAST_COUNT = int(getenv("LIMIT_LAST_COUNT"))
 ''' 连续处理任务限制数 '''
 CLOUD_TYPE = "obs" if getenv("OBS_ON", False) == "True" else "cos"
 ''' 云端存储类别，上传cos或者obs '''
+SOURCE_TYPE = int(getenv("DOWNLOAD_SOURCE_TYPE"))
+''' 下载来源 '''
 
 # ---------------------
 
@@ -57,46 +59,25 @@ def youtube_sleep(is_succ:bool, run_count:int, download_round:int):
         else:
             random_sleep(rand_st=60, rand_range=30) #请求失败等待1mins以上(非摸鱼时间)
 
-def clean_temp_files(vid:str):
-    ''' 清理临时文件 '''
-    if vid == "":
-        logger.warn("clean_temp_files > vid is null, skip cleanning.")
-        return
-
-    try:
-        audio_path, _ = make_path(getenv('DOWNLOAD_PATH'))
-        for dirpath, dirnames, filenames in walk(audio_path):
-            for filename in filenames:
-                full_path = path.join(dirpath, filename)
-                if vid in filename:
-                    print(f"clean_temp_files > 清理该批次临时文件：{full_path}")
-                    remove(full_path)
-    except Exception as e:
-        print(f"clean_temp_files > 清理临时文件失败：{e.__str__}")
-    finally:
-        return
-
 def main_pipeline(pid):
     sleep(30 * pid)
     logger.debug(f"Pipeline > pid {pid} started")
-    wait_flag = False
     download_round = int(1)      # 当前下载轮数
     run_count = int(0)           # 持续处理的任务个数
     continue_fail_count = int(0) # 连续失败的任务个数
 
     while True:
-        video = get_download_list(query_id=0)
-        # video = get_download_list(query_id=4898)
+        # video = get_video_for_download(query_id=0, query_source_type=SOURCE_TYPE)
+        video = get_video_for_download(query_id=668925)
 
         if video is None:
-            if not wait_flag:
-                logger.info(f"Pipeline > pid {pid} no task which has processed {run_count} tasks, waiting...")
-                wait_flag = True
+            logger.info(f"Pipeline > pid {pid} no task which has processed {run_count} tasks, waiting...")
             random_sleep(rand_st=20, rand_range=10)
             continue
-        wait_flag = False
         id = video.id
         link = video.source_link
+        info = json.loads(video.info)
+        cloud_save_path = info.get("cloud_save_path", "")
 
         try:
             run_count += 1
@@ -104,34 +85,28 @@ def main_pipeline(pid):
             time_1 = time()
 
             # 下载(本地存在不会被覆盖，续传)
-            _return_tuple = format_into_watch_url(link)
-            _vid, link = _return_tuple
-            download_path = download_by_watch_url(video_url=link, save_path=getenv('DOWNLOAD_PATH'))
+            # _return_tuple = format_into_watch_url(link)
+            # _vid, link = _return_tuple
+            download_path = download_by_watch_url(v=video, save_path=getenv('DOWNLOAD_PATH'))
             time_2 = time()
             spend_download_time = max(time_2 - time_1, 0.01) #下载花费时间
             
             # 上传云端
+            cloud_path = urljoin(
+                get_cloud_save_path_by_language(
+                    src_path=cloud_save_path if cloud_save_path !='' else getenv("CLOUD_SAVE_PATH"),
+                    lang_key=video.language
+                ), 
+                path.basename(download_path)
+            )
+            logger.info(f"Pipeline > pid {pid} processing {id} is ready to upload, from: {download_path}, to: {cloud_path}")
             if CLOUD_TYPE == "obs":
                 # cloud_path = urljoin(getenv("OBS_SAVEPATH"), path.basename(download_path))
-                cloud_path = urljoin(
-                    GetLanguageCloudSavePath(
-                        src_path=getenv("OBS_SAVEPATH"),
-                        lang_key=video.language
-                    ), 
-                    path.basename(download_path)
-                )
                 cloud_link = obs_upload_file(
                     from_path=download_path, to_path=cloud_path
                 )
             elif CLOUD_TYPE == "cos":
                 # cloud_path = urljoin(getenv("COS_SAVEPATH"), path.basename(download_path))
-                cloud_path = urljoin(
-                    GetLanguageCloudSavePath(
-                        src_path=getenv("COS_SAVEPATH"),
-                        lang_key=video.language
-                    ), 
-                    path.basename(download_path)
-                )
                 cloud_link = cos_upload_file(
                     from_path=download_path, to_path=cloud_path
                 )
@@ -144,7 +119,7 @@ def main_pipeline(pid):
             video.status = 2 # upload done
             video.cloud_type = 2 if CLOUD_TYPE == "obs" else 1 # 1:cos 2:obs
             video.cloud_path = cloud_link
-            update_status(video)
+            update_video_record(video)
             
             # 日志记录
             spend_total_time = int(time_3 - time_1) #总花费时间
@@ -161,7 +136,7 @@ def main_pipeline(pid):
             logger.warning(f"Pipeline > pid {pid} interrupted processing {id}, reverting...")
             # revert lock to 0
             video.lock = 0
-            update_status(video)
+            update_video_record(video)
             break
         except Exception as e:
             continue_fail_count += 1
@@ -171,7 +146,7 @@ def main_pipeline(pid):
             # 任务回调
             video.status = -1
             video.lock = 0
-            update_status(video)
+            update_video_record(video)
             # 告警
             notice_text = f"[Youtube Crawler | ERROR] download pipeline failed. \
                 \n\t下载服务: {SERVER_NAME} | {pid} \
