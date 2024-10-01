@@ -92,8 +92,8 @@ def is_touch_fish_time()->bool:
         print(f"[√] 摸鱼时间 > 当地时区 {ytb_timezone} | 当地时间 {current_hour}:{current_mint}")
         return True
 
-def get_cloud_save_path_by_language(src_path:str, lang_key:str)->str:
-    ''' 根据数据记录语言生成云端存储路径
+def get_cloud_save_path_by_language(save_path:str, lang_key:str)->str:
+    ''' 获取云存储路径
     @Paras  src_path: /DATA/{LANGUAGE}/youtube/ db_lang: vt
     @Return /DATA/Vietnam/youtube/
     '''
@@ -110,8 +110,8 @@ def get_cloud_save_path_by_language(src_path:str, lang_key:str)->str:
         "zh": "Zhongwen", # 中文
         "unknown": "Unclassify" # 未知
     }
-    if "{LANGUAGE}" in src_path:
-        ret_path = src_path.format(LANGUAGE=LANGUAGE_PATH_DICT.get(lang_key, "Unclassify"))
+    if "{LANGUAGE}" in save_path:
+        ret_path = save_path.format(LANGUAGE=LANGUAGE_PATH_DICT.get(lang_key, "Unclassify"))
     else:
-        ret_path = src_path
+        ret_path = save_path
     return ret_path

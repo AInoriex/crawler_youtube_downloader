@@ -85,8 +85,6 @@ def main_pipeline(pid):
             time_1 = time()
 
             # 下载(本地存在不会被覆盖，续传)
-            # _return_tuple = format_into_watch_url(link)
-            # _vid, link = _return_tuple
             download_path = download_by_watch_url(v=video, save_path=getenv('DOWNLOAD_PATH'))
             time_2 = time()
             spend_download_time = max(time_2 - time_1, 0.01) #下载花费时间
@@ -94,7 +92,7 @@ def main_pipeline(pid):
             # 上传云端
             cloud_path = urljoin(
                 get_cloud_save_path_by_language(
-                    src_path=cloud_save_path if cloud_save_path !='' else getenv("CLOUD_SAVE_PATH"),
+                    save_path=cloud_save_path if cloud_save_path !='' else getenv("CLOUD_SAVE_PATH"),
                     lang_key=video.language
                 ), 
                 path.basename(download_path)
