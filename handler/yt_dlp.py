@@ -51,7 +51,6 @@ def yt_dlp_init(v:Video, save_path:str, video_ext:str="mp4", audio_ext:str="m4a"
         "outtmpl": save_media_path + "/%(id)s.%(ext)s",
         
         # 下载格式配置
-        "skip_download": True,
         # # 提取视频
         "format": f"bestvideo[ext={video_ext}]+bestaudio[ext={audio_ext}]/best[ext={video_ext}]/best",
         "postprocessors": [{
@@ -69,19 +68,19 @@ def yt_dlp_init(v:Video, save_path:str, video_ext:str="mp4", audio_ext:str="m4a"
         # ],
 
         # 提取字幕
+        # "skip_download": True,
         # "writesubtitles": True, # 是否提取字幕
         # "subtitleslangs": ["en"], # 提取的语言
         # "subtitleslangs": [v.language],
         # "subtitlesformat": f"all/{subtitle_ext}",
         # "subtitlesformat": f"srt",
         # "subtitle": "--write-srt --sub-lang en",
-
-        "listsubtitles": True,
-        "writeautomaticsub": True, # 自动生成vtt
-        "postprocessors": [{
-            "key": "FFmpegSubtitlesConvertor",
-            "format": subtitle_ext,
-        }],
+        # "listsubtitles": True,
+        # "writeautomaticsub": True, # 自动生成vtt
+        # "postprocessors": [{
+        #     "key": "FFmpegSubtitlesConvertor",
+        #     "format": subtitle_ext,
+        # }],
         
         # 账号鉴权
         "username": "oauth2",
@@ -96,9 +95,9 @@ def load_options(local_save_path:str):
     DEBUG_MODE = getenv("DEBUG", False) == "True"
     OAUTH2_PATH = getenv("YTB_OAUTH2_PATH") if getenv("YTB_OAUTH2_PATH") else ""
     if OAUTH2_PATH:
-        print(f"Yt-dlp+oauth2 > load cache in {OAUTH2_PATH}")
+        print(f"Yt-dlp > OAuth2 load cache in {OAUTH2_PATH}")
     else:
-        print(f"Yt-dlp+oauth2 > use default cache")
+        print(f"Yt-dlp > OAuth2 use default cache")
 
     return {
         # 下载配置
@@ -281,3 +280,27 @@ def download_by_playlist_url(playlist_url:str, save_path:str, ydl_opts={}, max_l
                     random_sleep(rand_st=5, rand_range=5)
     print(f"download_by_playlist_url > 该列表下载完毕，成功: {success_count}条")
     return result_paths
+
+
+def yt_dlp_subtitles_handler():
+    ''' 处理下载字幕 '''
+    import subprocess
+
+    # 定义命令
+    command = [
+        "yt-dlp",
+        "--skip-download",
+        "--write-automatic-subs",
+        "--convert-subs", "srt",
+        "--sub-langs", "vi",
+        "-o", "./srt/%(id)s.%(ext)s",
+        "https://www.youtube.com/watch?v=rGUthJ7Ojso"
+    ]
+
+    # 执行命令
+    try:
+        subprocess.run(command, check=True)
+        print("命令执行成功")
+    except subprocess.CalledProcessError as e:
+        print("命令执行失败:", e)
+    return
