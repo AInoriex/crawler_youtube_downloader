@@ -155,16 +155,16 @@ def download_video_info(vid, ydl:YoutubeDL):
 
     info_dict = {
         "id": video_info["id"],
-        "title": video_info["title"],
-        "full_url": video_info["webpage_url"],
-        "author": video_info["uploader_id"],
-        "duration": video_info["duration"],
-        "categories": video_info["categories"],
-        "tags": video_info["tags"],
-        "view_count": video_info["view_count"],
-        "comment_count": video_info["comment_count"],
-        "follower_count": video_info["channel_follower_count"],
-        "upload_date": video_info["upload_date"],
+        # "title": video_info["title"],
+        # "full_url": video_info["webpage_url"],
+        # "author": video_info["uploader_id"],
+        # "duration": video_info["duration"],
+        # "categories": video_info["categories"],
+        # "tags": video_info["tags"],
+        # "view_count": video_info["view_count"],
+        # "comment_count": video_info["comment_count"],
+        # "follower_count": video_info["channel_follower_count"],
+        # "upload_date": video_info["upload_date"],
     }
     return info_dict
 
@@ -201,9 +201,9 @@ def download_by_watch_url(v:Video, save_path:str, retry=int(getenv("YTB_MAX_RETR
             # 下载资源信息
             info_dict = download_video_info(v.source_link, ydl)
             __vid = info_dict["id"]
-            info_filename = path.join(ydl_opts["save_info_path"], f"{__vid}.json")
-            dump_info(info_dict, info_filename)
-            print(f"Yt-dlp > download_by_watch_url 生成下载信息: {info_filename}")
+            # info_filename = path.join(ydl_opts["save_info_path"], f"{__vid}.json")
+            # dump_info(info_dict, info_filename)
+            # print(f"Yt-dlp > download_by_watch_url 生成下载信息: {info_filename}")
 
             # 下载资源
             ydl.download(__vid)
