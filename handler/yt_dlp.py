@@ -22,7 +22,10 @@ def yt_dlp_init(v:Video, save_path:str, video_ext:str="mp4", audio_ext:str="m4a"
      # See help(yt_dlp.postprocessor) for a list of available Postprocessors and their arguments
     # See details at https://github.com/yt-dlp/yt-dlp/blob/master/yt_dlp/YoutubeDL.py
     DEBUG_MODE = getenv("DEBUG", False) == "True"
-    OAUTH2_PATH = getenv("YTB_OAUTH2_PATH") if getenv("YTB_OAUTH2_PATH") else ""
+    if getenv("CRAWLER_SWITCH_ACCOUNT_ON", False) == "True":
+        from handler.youtube_accout import OAUTH2_PATH
+    else:
+        OAUTH2_PATH = getenv("YTB_OAUTH2_PATH") if getenv("YTB_OAUTH2_PATH") else ""
     if OAUTH2_PATH:
         print(f"Yt-dlp+oauth2 > load cache in {OAUTH2_PATH}")
     else:
@@ -218,7 +221,7 @@ def download_by_watch_url(v:Video, save_path:str, retry=int(getenv("YTB_MAX_RETR
         if retry > 0:
             if 'msg' in e.__dict__ and "Video unavailable" in e.msg: # 账号不可使用
                 print(f"Yt-dlp > [!] 账号可能无法使用，请换号重试")
-                raise Exception("账号失效，请换号重试")
+                raise BrokenPipeError("账号失效，请换号重试")
             random_sleep(rand_st=1, rand_range=4)
             return download_by_watch_url(v, save_path, retry=retry-1)
         else:
@@ -229,7 +232,7 @@ def download_by_watch_url(v:Video, save_path:str, retry=int(getenv("YTB_MAX_RETR
     else:
         return media_filename
 
-def download_by_playlist_url(playlist_url:str, save_path:str, ydl_opts={}, max_limit=0, retry=int(getenv("YTB_MAX_RETRY")), fail_limit=int(getenv("YTB_FAIL_COUNT"))):
+def download_by_playlist_url(playlist_url:str, save_path:str, ydl_opts={}, max_limit=0, retry=int(getenv("YTB_MAX_RETRY")), fail_limit=int(getenv("LIMIT_FAIL_COUNT"))):
     ''' 下载油管播放列表playlist到本地 https://www.youtube.com/playlist?list=xxx '''
     # 手动获取playlist title
     playlist_title = get_ytb_playlist_title(playlist_url)  # 获取播放列表标题

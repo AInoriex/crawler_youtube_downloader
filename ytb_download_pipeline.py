@@ -15,8 +15,6 @@ from utils.utime import random_sleep, get_now_time_string, format_second_to_time
 from utils.file import get_file_size
 from utils.lark import alarm_lark_text
 from utils.ip import get_local_ip, get_public_ip
-from utils.cos import upload_file as cos_upload_file
-from utils.obs import upload_file as obs_upload_file
 
 # ---------------------
 # ---- 初始化参数 -----
@@ -35,31 +33,55 @@ LIMIT_LAST_COUNT = int(getenv("LIMIT_LAST_COUNT"))
 ''' 连续处理任务限制数 '''
 CLOUD_TYPE = "obs" if getenv("OBS_ON", False) == "True" else "cos"
 ''' 云端存储类别，上传cos或者obs '''
-SOURCE_TYPE = int(getenv("DOWNLOAD_SOURCE_TYPE"))
-''' 下载来源 '''
+if CLOUD_TYPE == "obs":
+    from utils.obs import upload_file as obs_upload_file
+elif CLOUD_TYPE == "cos":
+    from utils.cos import upload_file as cos_upload_file
+else:
+    raise NotImplementedError
 
-# ---------------------
+# ---------------------------------------------------------------
 
 def youtube_sleep(is_succ:bool, run_count:int, download_round:int):
-    """ 油管下载间隔等待规则 """
+    """
+    任务处理 sleep 机制
+
+    :param is_succ: bool, 任务是否处理成功
+    :param run_count: int, 任务处理次数
+    :param download_round: int, 任务处理轮数
+
+    1. 触发轮数限制,每轮固定等2mins
+    2. 任务处理成功
+        2.1.摸鱼时间,间隔5s以上
+        2.2.非摸鱼时间,间隔10s以上
+    3. 任务处理失败
+        3.1.摸鱼时间,等待0.5mins以上
+        3.2.非摸鱼时间,等待1mins以上
+    """
     now_round = run_count//LIMIT_LAST_COUNT + 1
     if now_round > download_round:
         logger.info(f"Pipeline > 触发轮数限制, 当前轮数：{now_round}")
-        random_sleep(rand_st=60*2, rand_range=1) #每轮固定等2mins
+        random_sleep(rand_st=60*2, rand_range=1)
         return
-
     if is_succ:
         if is_touch_fish_time():
-            random_sleep(rand_st=5, rand_range=10) #处理成功间隔5s以上
+            random_sleep(rand_st=5, rand_range=10)
         else:
-            random_sleep(rand_st=10, rand_range=10) #处理成功间隔10s以上(非摸鱼时间)
+            random_sleep(rand_st=10, rand_range=10)
     else:
         if is_touch_fish_time():
-            random_sleep(rand_st=30, rand_range=30) #请求失败等待0.5mins以上
+            random_sleep(rand_st=30, rand_range=30)
         else:
-            random_sleep(rand_st=60, rand_range=30) #请求失败等待1mins以上(非摸鱼时间)
+            random_sleep(rand_st=60, rand_range=30)
 
 def main_pipeline(pid):
+    from handler.youtube_accout import YoutubeAccout, OAUTH2_PATH
+    if getenv("CRAWLER_SWITCH_ACCOUNT_ON", False) == "True":
+        ac = YoutubeAccout()
+        if OAUTH2_PATH == "":
+            logger.info("Pipeline > 账号为空，准备初始化账号")
+            assert ac.youtube_login_handler() == 0 # 需要登陆成功才能继续处理
+
     sleep(30 * pid)
     logger.debug(f"Pipeline > pid {pid} started")
     download_round = int(1)      # 当前下载轮数
@@ -67,8 +89,12 @@ def main_pipeline(pid):
     continue_fail_count = int(0) # 连续失败的任务个数
 
     while True:
-        # video = get_video_for_download(query_id=0, query_source_type=SOURCE_TYPE)
-        video = get_video_for_download(query_id=668925)
+        video = get_video_for_download(
+            query_id=0, 
+            query_source_type=int(getenv("DOWNLOAD_SOURCE_TYPE")),
+            query_language=getenv("DOWNLOAD_LANGUAGE"),
+        )
+        # video = get_video_for_download(query_id=668925)
 
         if video is None:
             logger.info(f"Pipeline > pid {pid} no task which has processed {run_count} tasks, waiting...")
@@ -97,7 +123,7 @@ def main_pipeline(pid):
                 ), 
                 path.basename(download_path)
             )
-            logger.info(f"Pipeline > pid {pid} processing {id} is ready to upload, from: {download_path}, to: {cloud_path}")
+            logger.info(f"Pipeline > pid {pid} processing {id} is ready to upload `{CLOUD_TYPE}`, from: {download_path}, to: {cloud_path}")
             if CLOUD_TYPE == "obs":
                 # cloud_path = urljoin(getenv("OBS_SAVEPATH"), path.basename(download_path))
                 cloud_link = obs_upload_file(
@@ -136,6 +162,45 @@ def main_pipeline(pid):
             video.lock = 0
             update_video_record(video)
             break
+        except BrokenPipeError as e: # 账号被封处理
+            continue_fail_count += 1
+            time_fail = time()
+            logger.error(f"Pipeline > pid {pid} error processing {id}")
+            logger.error(e, stack_info=True)
+            # 任务回调
+            video.status = -1
+            video.lock = 0
+            update_video_record(video)
+            # 告警
+            notice_text = f"[Youtube Crawler | ERROR] download pipeline failed. \
+                \n\t下载服务: {SERVER_NAME} | {pid} \
+                \n\t下载信息: 轮数 {download_round} | 处理总数 {run_count} | 连续失败数 {continue_fail_count}\
+                \n\t资源ID: {video.id} | {video.vid} \
+                \n\tSource_Link: {video.source_link} \
+                \n\tCloud_Link: {video.cloud_path} \
+                \n\t共处理了{format_second_to_time_string(int(time_fail-time_1))} \
+                \n\tIP: {local_ip} | {get_public_ip()} \
+                \n\tERROR: {e} \
+                \n\t告警时间: {get_now_time_string()}"
+            logger.error(notice_text)
+            alarm_lark_text(webhook=getenv("LARK_NOTICE_WEBHOOK"), text=notice_text)
+            # 失败过多直接退出
+            if continue_fail_count > LIMIT_FAIL_COUNT:
+                logger.error(f"Pipeline > pid {pid} unexpectable exit beceuse of too much fail count: {continue_fail_count}")
+                alarm_lark_text(webhook=getenv("LARK_ERROR_WEBHOOK"), text=notice_text)
+                if getenv("CRAWLER_SWITCH_ACCOUNT_ON", False) == "True":
+                    ac.logout_account() # 退出登陆
+                exit()
+            if getenv("CRAWLER_SWITCH_ACCOUNT_ON", False) == "True":
+                if ac.is_process:
+                    logger.warning(f"Pipeline > [!] 当前正在换号中")
+                    youtube_sleep(is_succ=False, run_count=run_count, download_round=download_round)
+                else:
+                    logger.warning(f"Pipeline > [!] 开始尝试切换新账号使用")
+                    ac.youtube_login_handler()
+            else:
+                logger.info(f"Pipeline > [!] 当前未开启自动切换账号模式")
+            continue
         except Exception as e:
             continue_fail_count += 1
             time_fail = time()
@@ -162,6 +227,8 @@ def main_pipeline(pid):
             if continue_fail_count > LIMIT_FAIL_COUNT:
                 logger.error(f"Pipeline > pid {pid} unexpectable exit beceuse of too much fail count: {continue_fail_count}")
                 alarm_lark_text(webhook=getenv("LARK_ERROR_WEBHOOK"), text=notice_text)
+                if getenv("CRAWLER_SWITCH_ACCOUNT_ON", False) == "True":
+                    ac.logout_account() # 退出登陆
                 exit()
             youtube_sleep(is_succ=False, run_count=run_count, download_round=download_round)
             continue
@@ -181,7 +248,6 @@ def main_pipeline(pid):
             youtube_sleep(is_succ=True, run_count=run_count, download_round=download_round)
         finally:
             download_round = run_count//LIMIT_LAST_COUNT + 1
-            # clean_temp_files(vid)
 
 
 if __name__ == "__main__":
