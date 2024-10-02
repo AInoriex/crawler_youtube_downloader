@@ -270,13 +270,13 @@ class YoutubeAccout:
                 return
 
             # 2. 登录账号获取token
-            # token = self.account_auto_login(
-            #     url=getenv("CRAWLER_AUTO_LOGIN_API"),
-            #     username=self.username,
-            #     password=self.password,
-            #     verify_email=self.verify_email,
-            # )
-            token = {"access_token": "ya29.a0AcM612zSm47CaujLJib3Igp59_vQk-r1CNg7ECZcn5daavXG7riav80NoSPMwPvN-B8gm7zE-NcC46IzRkP-qBqy2363WEvIYuwq1ViHbt7DynnmMXke75XwFtEPIGqPhJfpPhvHmVN96cqPmrZ-6soPOyyC6b0pJRs459QBcHTCZRg2LymXaCgYKARESARMSFQHGX2Mi9iA6jnCDRmJK8tbIiuD9Fw0187","expires": 1727970558.819872,"refresh_token": "1//050ihnwKTZaG0CgYIARAAGAUSNwF-L9IrejCMXEAqUKRWFhKL4e2enIXHqdTrg3Q8C0B8Pq4XzK4kH642DtHPPvanz0pgrg6Xv94","token_type": "Bearer"}
+            token = self.account_auto_login(
+                url=getenv("CRAWLER_AUTO_LOGIN_API"),
+                username=self.username,
+                password=self.password,
+                verify_email=self.verify_email,
+            )
+            # token = {"access_token": "ya29.a0AcM612zSm47CaujLJib3Igp59_vQk-r1CNg7ECZcn5daavXG7riav80NoSPMwPvN-B8gm7zE-NcC46IzRkP-qBqy2363WEvIYuwq1ViHbt7DynnmMXke75XwFtEPIGqPhJfpPhvHmVN96cqPmrZ-6soPOyyC6b0pJRs459QBcHTCZRg2LymXaCgYKARESARMSFQHGX2Mi9iA6jnCDRmJK8tbIiuD9Fw0187","expires": 1727970558.819872,"refresh_token": "1//050ihnwKTZaG0CgYIARAAGAUSNwF-L9IrejCMXEAqUKRWFhKL4e2enIXHqdTrg3Q8C0B8Pq4XzK4kH642DtHPPvanz0pgrg6Xv94","token_type": "Bearer"}
             if token == {}:
                 print("youtube_account > youtube_login_handler 自动登陆账号失败")
                 raise Exception("youtube_login_handler 自动登陆账号失败")
