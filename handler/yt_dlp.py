@@ -39,7 +39,6 @@ def yt_dlp_init(v:Video, save_path:str, video_ext:str="mp4", audio_ext:str="m4a"
         # 下载配置
         "quiet": False if DEBUG_MODE else True, # Do not print messages to stdout.
         "verbose": True if DEBUG_MODE else False, # Print additional info to stdout.
-        "dumpjson": True,
         "proxy": (
             getenv("HTTP_PROXY")
             if getenv("HTTP_PROXY") != ""
@@ -48,6 +47,7 @@ def yt_dlp_init(v:Video, save_path:str, video_ext:str="mp4", audio_ext:str="m4a"
         "ratelimit": 10 * 1024 * 1024, # x * M,
         "nooverwrites": True,
         "continuedl": True, # Continue download
+        "noplaylist": True, # 不下载列表所有视频
         # "playlistreverse": True,
         "sleep_interval": 1,
         # "paths": save_media_path + "/",
