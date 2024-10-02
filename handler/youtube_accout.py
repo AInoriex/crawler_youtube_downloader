@@ -270,6 +270,7 @@ class YoutubeAccout:
                 return
 
             # 2. 登录账号获取token
+            print("youtube_account > youtube_login_handler 正在自动登陆账号中，请稍后...")
             token = self.account_auto_login(
                 url=getenv("CRAWLER_AUTO_LOGIN_API"),
                 username=self.username,
