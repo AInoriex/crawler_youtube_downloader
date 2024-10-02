@@ -1,9 +1,9 @@
+import traceback
 from os import path, makedirs, getenv
 from handler.info import dump_info
-from utils.utime import random_sleep
-import yt_dlp
 from yt_dlp import YoutubeDL
 from database.youtube_api import Video
+from utils.utime import random_sleep
 
 def make_path(save_path):
     ''' 预创建下载目录 '''
@@ -173,7 +173,7 @@ def get_ytb_playlist_title(playlist_url:str, ydl_opts={}):
     @Desc     获取播放列表标题
     @Return   info['title'] | empty string
     '''
-    with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+    with YoutubeDL(ydl_opts) as ydl:
         info = ydl.extract_info(playlist_url, download=False, process=False)
         # print(f"Info: {info}")
         title = info.get("title", "")
@@ -197,7 +197,7 @@ def download_by_watch_url(v:Video, save_path:str, retry=int(getenv("YTB_MAX_RETR
             audio_ext="m4a",
             subtitle_ext="srt",
         )
-        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+        with YoutubeDL(ydl_opts) as ydl:
             # 下载资源信息
             info_dict = download_video_info(v.source_link, ydl)
             __vid = info_dict["id"]
@@ -217,7 +217,7 @@ def download_by_watch_url(v:Video, save_path:str, retry=int(getenv("YTB_MAX_RETR
             #     print(f"Yt-dlp > download_by_watch_url 字幕下载完成: {subtitle_filename}")
 
     except Exception as e:
-        print("Yt-dlp > [!] download_by_watch_url 处理失败", e)
+        print("Yt-dlp > [!] download_by_watch_url 处理失败", traceback.format_exception)
         if retry > 0:
             if 'msg' in e.__dict__ and "Video unavailable" in e.msg: # 账号不可使用
                 print(f"Yt-dlp > [!] 账号可能无法使用，请换号重试")
@@ -248,7 +248,7 @@ def download_by_playlist_url(playlist_url:str, save_path:str, ydl_opts={}, max_l
     success_count = 0
     fail_count = 0
     result_paths = []
-    with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+    with YoutubeDL(ydl_opts) as ydl:
         author_info = ydl.extract_info(playlist_url, download=False, process=False)
         for entry in author_info["entries"]:
             if max_limit != 0 and success_count >= max_limit:
