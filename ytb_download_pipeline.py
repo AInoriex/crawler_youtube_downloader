@@ -75,14 +75,35 @@ def youtube_sleep(is_succ:bool, run_count:int, download_round:int):
             random_sleep(rand_st=60, rand_range=30)
 
 def main_pipeline(pid):
-    from handler.youtube_accout import YoutubeAccout, OAUTH2_PATH
-    if getenv("CRAWLER_SWITCH_ACCOUNT_ON", False) == "True":
-        ac = YoutubeAccout()
-        if OAUTH2_PATH == "":
-            logger.info("Pipeline > 账号为空，准备初始化账号")
-            assert ac.youtube_login_handler() == 0 # 需要登陆成功才能继续处理
-
     sleep(30 * pid)
+    from handler.youtube_accout import YoutubeAccout, OAUTH2_PATH
+    def handler_switch_account(ac:YoutubeAccout):
+        """
+        账号轮询登陆直至成功
+
+        :param ac: YoutubeAccout, 账号实例
+        :return: None
+        """
+        while 1:
+            try:
+                assert ac.youtube_login_handler() == 0 # 需要登陆成功才能继续处理
+            except Exception as e:
+                logger.error(f"Pipeline > 初始化账号出错，{e}")
+                continue
+            else:
+                break
+            finally:
+                sleep(30)
+    
+    if OAUTH2_PATH == "":
+        if getenv("CRAWLER_SWITCH_ACCOUNT_ON", False) == "True":
+            ac = YoutubeAccout()
+            logger.info("Pipeline > 账号为空，准备初始化账号")
+            handler_switch_account(ac)
+        else:
+            logger.warning("Pipeline > [!] 当前OAuth2账号为空")
+
+
     logger.debug(f"Pipeline > pid {pid} started")
     download_round = int(1)      # 当前下载轮数
     run_count = int(0)           # 持续处理的任务个数
@@ -197,7 +218,8 @@ def main_pipeline(pid):
                     youtube_sleep(is_succ=False, run_count=run_count, download_round=download_round)
                 else:
                     logger.warning(f"Pipeline > [!] 开始尝试切换新账号使用")
-                    ac.youtube_login_handler()
+                    # ac.youtube_login_handler()
+                    handler_switch_account(ac)
             else:
                 logger.info(f"Pipeline > [!] 当前未开启自动切换账号模式")
             continue
