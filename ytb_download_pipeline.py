@@ -61,7 +61,7 @@ def youtube_sleep(is_succ:bool, run_count:int, download_round:int):
     now_round = run_count//LIMIT_LAST_COUNT + 1
     if now_round > download_round:
         logger.info(f"Pipeline > 触发轮数限制, 当前轮数：{now_round}")
-        random_sleep(rand_st=60*2, rand_range=1)
+        random_sleep(rand_st=30, rand_range=30)
         return
     if is_succ:
         if is_touch_fish_time():

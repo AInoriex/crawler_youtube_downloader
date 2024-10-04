@@ -49,7 +49,7 @@ def yt_dlp_init(v:Video, save_path:str, video_ext:str="mp4", audio_ext:str="m4a"
         "continuedl": True, # Continue download
         "noplaylist": True, # 不下载列表所有视频
         # "playlistreverse": True,
-        "sleep_interval": 1,
+        "sleep_interval": 2,
         # "paths": save_media_path + "/",
         "outtmpl": save_media_path + "/%(id)s.%(ext)s",
         
