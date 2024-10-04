@@ -18,7 +18,6 @@ def get_video_for_download(query_id=0, query_source_type=int(getenv("DOWNLOAD_SO
         url = getenv("DATABASE_GET_API")
         params = {
             "sign": get_time_stamp(),
-            # "sign": int(time()),
             "id": query_id,
             "source_type": query_source_type,
             "language": query_language,
@@ -49,8 +48,9 @@ def get_video_for_download(query_id=0, query_source_type=int(getenv("DOWNLOAD_SO
             info=resp_data.get("info", ""),
         )
     except Exception as e:
-        print(f"get_video_for_download > Error: {e}")
-        raise Exception(f"get_video_for_download failed, req:{params}, resp:{resp_json}")
+        print(f"get_video_for_download > get video failed, req:{params}, resp:{resp_json}, Error: {e}")
+        # raise Exception(f"get_video_for_download failed, req:{params}, resp:{resp_json}")
+        return None
     else:
         return video
 

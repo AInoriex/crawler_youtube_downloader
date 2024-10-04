@@ -93,6 +93,7 @@ def main_pipeline(pid):
             else:
                 break
             finally:
+                print("Pipeline > pid {pid} get empty account , sleeping 30s...")
                 sleep(30)
     
     if OAUTH2_PATH == "":
@@ -118,7 +119,11 @@ def main_pipeline(pid):
         # video = get_video_for_download(query_id=668925)
 
         if video is None:
-            logger.info(f"Pipeline > pid {pid} no task which has processed {run_count} tasks, waiting...")
+            logger.warning(f"Pipeline > pid {pid} no task which has processed {run_count} tasks, waiting...")
+            random_sleep(rand_st=20, rand_range=10)
+            continue
+        if video.id <= 0 or video.source_link == "":
+            logger.warning(f"Pipeline > pid {pid} get invalid video, continue...")
             random_sleep(rand_st=20, rand_range=10)
             continue
         id = video.id
