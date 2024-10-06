@@ -75,7 +75,7 @@ def youtube_sleep(is_succ:bool, run_count:int, download_round:int):
             random_sleep(rand_st=60, rand_range=30)
 
 def main_pipeline(pid):
-    sleep(30 * pid)
+    sleep(60 * pid)
     from handler.youtube_accout import YoutubeAccout, OAUTH2_PATH
     def handler_switch_account(ac:YoutubeAccout):
         """
