@@ -99,19 +99,27 @@ def get_cloud_save_path_by_language(save_path:str, lang_key:str)->str:
     '''
     ret_path = str("")   
     LANGUAGE_PATH_DICT = {
-        "vi": "Vietnam", # 越南语
-        "yue": "Yueyu", # 粤语
-        "nan": "Minnanyu", # 闽南语
-        "th": "Taiyu", # 泰语
-        "id": "Yinniyu", # 印尼语
-        "ms": "Malaiyu", # 马来语
-        "fil": "Feilvbinyu", # 菲律宾语
-        "en": "English", # 英语
-        "zh": "Zhongwen", # 中文
+        "en": "English",    # 英语
+        "zh": "Zhongwen",   # 中文
+        "yue": "Yueyu",     # 粤语
+        "vi": "Vietnam",    # 越南语
+        "nan": "Minnanyu",  # 闽南语
+        "th": "Taiyu",      # 泰语
+        "id": "Yinniyu",    # 印尼语
+        "ms": "Malaiyu",    # 马来语
+        "fil": "Feilvbinyu",# 菲律宾语
+        "ar": "Alaboyu",    # 阿拉伯语
+        "ru": "Eyu",        # 俄语
+        "ko": "Hanyu",      # 韩语
+        "ja": "Riyu",       # 日语
+        "de": "Deyu",       # 德语
+        "fr": "Fayu",       # 法语
+        "es": "Xibanyayu",  # 西班牙语
+        "tl":"Tajialuyu",   # 他加禄语
         "unknown": "Unclassify" # 未知
     }
     if "{LANGUAGE}" in save_path:
-        ret_path = save_path.format(LANGUAGE=LANGUAGE_PATH_DICT.get(lang_key, "Unclassify"))
+        ret_path = save_path.format(LANGUAGE=LANGUAGE_PATH_DICT.get(lang_key.lower(), "Unclassify"))
     else:
         ret_path = save_path
     return ret_path
