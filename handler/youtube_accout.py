@@ -41,11 +41,11 @@ class YoutubeAccout:
             self.logout_account() 
         pass
 
-    def show_account(self):
+    def print_account(self):
         '''
         打印当前youtube账号信息
         '''
-        print("[DEBUG]-----------------youtube account info -----------------[DEBUG]")
+        print("┌───────────── youtube account info ─────────────┐")
         print("youtube_account > id:", self.id)
         print("youtube_account > username:", self.username)
         print("youtube_account > password:", self.password)
@@ -53,8 +53,24 @@ class YoutubeAccout:
         print("youtube_account > login_name:", self.login_name)
         print("youtube_account > status:", self.status)
         print("youtube_account > token:", self.token)
-        print("[DEBUG]-----------------youtube account info -----------------[DEBUG]")
-        return 
+        print("└─────────────  youtube account info ─────────────┘ ")
+        return
+
+    def get_account_info(self):
+        '''
+        获取当前youtube账号信息
+
+        :return: dict
+        '''
+        return {
+            "id": self.id,
+            "username": self.username,
+            "password": self.password,
+            "verify_email": self.verify_email,
+            "login_name": self.login_name,
+            "status": self.status,
+            "token": self.token
+        }
 
     def is_process(self):
         return self.is_process
@@ -78,7 +94,7 @@ class YoutubeAccout:
             self._format_crawler_account_response(resp.json()["data"])
             self.status = 2 # 账号设置为占用状态
             print("youtube_account > get_new_account succeed", resp.json())
-            self.show_account()
+            self.print_account()
         except Exception as e:
             print(f"youtube_account > [!] get_new_account ERROR, {e.__class__} | response:{str(resp.content, encoding='utf-8')}")
 
@@ -279,8 +295,8 @@ class YoutubeAccout:
             )
             # token = {"access_token": "ya29.a0AcM612zSm47CaujLJib3Igp59_vQk-r1CNg7ECZcn5daavXG7riav80NoSPMwPvN-B8gm7zE-NcC46IzRkP-qBqy2363WEvIYuwq1ViHbt7DynnmMXke75XwFtEPIGqPhJfpPhvHmVN96cqPmrZ-6soPOyyC6b0pJRs459QBcHTCZRg2LymXaCgYKARESARMSFQHGX2Mi9iA6jnCDRmJK8tbIiuD9Fw0187","expires": 1727970558.819872,"refresh_token": "1//050ihnwKTZaG0CgYIARAAGAUSNwF-L9IrejCMXEAqUKRWFhKL4e2enIXHqdTrg3Q8C0B8Pq4XzK4kH642DtHPPvanz0pgrg6Xv94","token_type": "Bearer"}
             if token == {}:
-                print("youtube_account > youtube_login_handler 自动登陆账号失败")
-                raise Exception("youtube_login_handler 自动登陆账号失败")
+                print("youtube_account > youtube_login_handler 自动登陆账号失败, token为空")
+                raise Exception("youtube_login_handler 自动登陆账号失败, token为空")
             self.token = token
 
             # 3. token保存到文件
@@ -295,6 +311,9 @@ class YoutubeAccout:
 
             # 4. 更新yt-dlp需要的oauth2路径
             self.update_oauth2(token_path=token_path)
+
+            # 5. 更新状态
+            self.login_account(is_login=True)
         except Exception as e:
             print("youtube_account > [!] youtube_login_handler ERROR", e.__class__)
             self.login_account(is_login=False)
@@ -306,9 +325,8 @@ class YoutubeAccout:
                 \n\tERROR: {e} \
                 \n\t告警时间: {get_now_time_string()}"
             alarm_lark_text(webhook=getenv("LARK_ERROR_WEBHOOK"), text=notice_text)
-            return -1
+            raise e
         else:
-            self.login_account(is_login=True)
             # 告警
             notice_text = f"[Youtube Crawler ACCOUNT | INFO] 自动换号成功. \
                 \n\t登入方: {self.login_name} \
@@ -318,7 +336,6 @@ class YoutubeAccout:
                 \n\tToken Content: {self.token} \
                 \n\t告警时间: {get_now_time_string()}"
             alarm_lark_text(webhook=getenv("LARK_ERROR_WEBHOOK"), text=notice_text)
-            return 0
         finally:
             self.is_process = False
 

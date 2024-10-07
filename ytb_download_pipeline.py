@@ -61,18 +61,18 @@ def youtube_sleep(is_succ:bool, run_count:int, download_round:int):
     now_round = run_count//LIMIT_LAST_COUNT + 1
     if now_round > download_round:
         logger.info(f"Pipeline > 触发轮数限制, 当前轮数：{now_round}")
-        random_sleep(rand_st=30, rand_range=30)
+        random_sleep(rand_st=60, rand_range=30)
         return
     if is_succ:
         if is_touch_fish_time():
-            random_sleep(rand_st=5, rand_range=10)
+            random_sleep(rand_st=5, rand_range=5)
         else:
-            random_sleep(rand_st=10, rand_range=10)
+            random_sleep(rand_st=10, rand_range=5)
     else:
         if is_touch_fish_time():
-            random_sleep(rand_st=30, rand_range=30)
+            random_sleep(rand_st=5, rand_range=20)
         else:
-            random_sleep(rand_st=60, rand_range=30)
+            random_sleep(rand_st=10, rand_range=20)
 
 def main_pipeline(pid):
     sleep(60 * pid)
@@ -89,12 +89,12 @@ def main_pipeline(pid):
                 assert ac.youtube_login_handler() == 0 # 需要登陆成功才能继续处理
             except Exception as e:
                 logger.error(f"Pipeline > 初始化账号出错，{e}")
+                print(f"Pipeline > pid {pid} youtube_login_handler failed, sleeping 30s...")
+                sleep(30)
                 continue
             else:
+                logger.info(f"Pipeline > 初始化账号成功，{ac.id} | {ac.username}")
                 break
-            finally:
-                print("Pipeline > pid {pid} get empty account , sleeping 30s...")
-                sleep(30)
     
     if OAUTH2_PATH == "":
         if getenv("CRAWLER_SWITCH_ACCOUNT_ON", False) == "True":
@@ -198,22 +198,21 @@ def main_pipeline(pid):
             video.lock = 0
             update_video_record(video)
             # 告警
-            notice_text = f"[Youtube Crawler | ERROR] download pipeline failed. \
+            notice_text = f"[Youtube Crawler | ERROR] 账号失效. \
                 \n\t下载服务: {SERVER_NAME} | {pid} \
                 \n\t下载信息: 轮数 {download_round} | 处理总数 {run_count} | 连续失败数 {continue_fail_count}\
                 \n\t资源ID: {video.id} | {video.vid} \
                 \n\tSource_Link: {video.source_link} \
-                \n\tCloud_Link: {video.cloud_path} \
                 \n\t共处理了{format_second_to_time_string(int(time_fail-time_1))} \
                 \n\tIP: {local_ip} | {get_public_ip()} \
-                \n\tERROR: {e} \
+                \n\t账号信息: {ac.get_account_info()} \
+                \n\t错误信息: {e} \
                 \n\t告警时间: {get_now_time_string()}"
             logger.error(notice_text)
-            alarm_lark_text(webhook=getenv("LARK_NOTICE_WEBHOOK"), text=notice_text)
+            alarm_lark_text(webhook=getenv("LARK_ERROR_WEBHOOK"), text=notice_text)
             # 失败过多直接退出
             if continue_fail_count > LIMIT_FAIL_COUNT:
                 logger.error(f"Pipeline > pid {pid} unexpectable exit beceuse of too much fail count: {continue_fail_count}")
-                alarm_lark_text(webhook=getenv("LARK_ERROR_WEBHOOK"), text=notice_text)
                 if getenv("CRAWLER_SWITCH_ACCOUNT_ON", False) == "True":
                     ac.logout_account() # 退出登陆
                 exit()
