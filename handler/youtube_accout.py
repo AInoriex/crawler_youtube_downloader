@@ -38,7 +38,7 @@ class YoutubeAccout:
 
     def __del__(self):
         if self.status and self.status == 2:
-            self.logout_account() 
+            self.logout() 
         pass
 
     def print_account(self):
@@ -98,7 +98,7 @@ class YoutubeAccout:
         except Exception as e:
             print(f"youtube_account > [!] get_new_account ERROR, {e.__class__} | response:{str(resp.content, encoding='utf-8')}")
 
-    def login_account(self, is_login=False, retry:int=3):
+    def login(self, is_login=False, retry:int=3):
         '''账号登入
         @params is_login: bool, retry: int
         @return None
@@ -130,11 +130,11 @@ class YoutubeAccout:
         except Exception as e:
             print("youtube_account > [!] login_account ERROR", reqbody, e)
             sleep(1)
-            self.login_account(is_login=is_login, retry=retry-1)
+            self.login(is_login=is_login, retry=retry-1)
 
-    def logout_account(self, retry:int=3):
+    def logout(self, is_invalid:bool=False, comment:str="", retry:int=3):
         '''账号登出
-        @params retry: int
+        @params is_invalid: bool, comment: str, retry: int
         @return None
         '''
         url = getenv("CRAWLER_LOGOUT_ACCOUNT_API") # TODO
@@ -143,7 +143,12 @@ class YoutubeAccout:
             # TODO 告警
             return
         try:
-            reqbody = {"request_id": uuid4().hex, "id": self.id}
+            reqbody = {
+                "request_id": uuid4().hex, 
+                "id": self.id,
+                "is_invalid": is_invalid,
+                "comment": comment
+            }
             # print(f"youtube_account > [DEBUG] logout_account request | reqbody:{reqbody}")
             resp = requests.post(url=url, params={"sign": int(time())}, json=reqbody)
             print(f"youtube_account > [DEBUG] logout_account response | status_code:{resp.status_code}, content:{str(resp.content, encoding='utf-8')}")
@@ -152,7 +157,7 @@ class YoutubeAccout:
         except Exception as e:
             print("youtube_account > [!] logout_account ERROR", e)
             sleep(1)
-            self.logout_account(retry=retry-1)
+            self.logout(retry=retry-1)
 
     def _format_crawler_account_response(self, data:dict):
         '''根据Youtube账号API响应，格式化Youtube账号
@@ -313,10 +318,10 @@ class YoutubeAccout:
             self.update_oauth2(token_path=token_path)
 
             # 5. 更新状态
-            self.login_account(is_login=True)
+            self.login(is_login=True)
         except Exception as e:
             print("youtube_account > [!] youtube_login_handler ERROR", e.__class__)
-            self.login_account(is_login=False)
+            self.login(is_login=False)
             # 告警
             notice_text = f"[Youtube Crawler ACCOUNT | ERROR] 自动换号失败. \
                 \n\t登入方: {self.login_name} \

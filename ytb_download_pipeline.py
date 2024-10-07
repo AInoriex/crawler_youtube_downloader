@@ -184,7 +184,7 @@ def main_pipeline(pid):
 
         except KeyboardInterrupt:
             logger.warning(f"Pipeline > pid {pid} interrupted processing {id}, reverting...")
-            # revert lock to 0
+            # 任务回调
             video.lock = 0
             update_video_record(video)
             break
@@ -210,12 +210,14 @@ def main_pipeline(pid):
                 \n\t告警时间: {get_now_time_string()}"
             logger.error(notice_text)
             alarm_lark_text(webhook=getenv("LARK_ERROR_WEBHOOK"), text=notice_text)
+            # 登出账号
+            if getenv("CRAWLER_SWITCH_ACCOUNT_ON", False) == "True":
+                ac.logout(is_invalid=True, comment="账号失效") 
             # 失败过多直接退出
             if continue_fail_count > LIMIT_FAIL_COUNT:
                 logger.error(f"Pipeline > pid {pid} unexpectable exit beceuse of too much fail count: {continue_fail_count}")
-                if getenv("CRAWLER_SWITCH_ACCOUNT_ON", False) == "True":
-                    ac.logout_account() # 退出登陆
                 exit()
+            # 换号
             if getenv("CRAWLER_SWITCH_ACCOUNT_ON", False) == "True":
                 if ac.is_process:
                     logger.warning(f"Pipeline > [!] 当前正在换号中")
@@ -254,7 +256,7 @@ def main_pipeline(pid):
                 logger.error(f"Pipeline > pid {pid} unexpectable exit beceuse of too much fail count: {continue_fail_count}")
                 alarm_lark_text(webhook=getenv("LARK_ERROR_WEBHOOK"), text=notice_text)
                 if getenv("CRAWLER_SWITCH_ACCOUNT_ON", False) == "True":
-                    ac.logout_account() # 退出登陆
+                    ac.logout(is_invalid=False, comment=f"{SERVER_NAME}失败过多退出") # 退出登陆
                 exit()
             youtube_sleep(is_succ=False, run_count=run_count, download_round=download_round)
             continue
