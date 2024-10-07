@@ -6,10 +6,13 @@ from uuid import uuid4
 from pprint import pprint
 from utils.lark import alarm_lark_text
 from utils.utime import get_now_time_string
+from utils import logger
+
+logger = logger.init_logger("youtube_account")
 
 OAUTH2_PATH = getenv("YTB_OAUTH2_PATH") if getenv("YTB_OAUTH2_PATH") else ""
 ''' YouTube账号缓存目录'''
-print(f"youtube_account > 初始化账号cache路径：{OAUTH2_PATH}")
+logger.info(f"youtube_account > 初始化账号cache路径：{OAUTH2_PATH}")
 
 class YoutubeAccout:
     '''
@@ -37,9 +40,7 @@ class YoutubeAccout:
         self.is_process:bool = False # 是否在处理换号
 
     def __del__(self):
-        if self.status and self.status == 2:
-            self.logout() 
-        pass
+        self.logout() 
 
     def print_account(self):
         '''
@@ -69,52 +70,44 @@ class YoutubeAccout:
             "verify_email": self.verify_email,
             "login_name": self.login_name,
             "status": self.status,
-            "token": self.token
+            # "token": self.token
         }
 
     def is_process(self):
         return self.is_process
 
-    def get_new_account(self, retry:int=3):
+    def get_new_account(self):
         '''
         通过api获取一个可用的youtube账号
         @params retry: int, retry次数
         @return None
         '''
-        url = getenv("CRAWLER_GET_ACCOUNT_API")
-        if retry <= 0:
-            print("youtube_account > [!] get_new_account FAILED, no more retry")
-            return
         try:
+            url = getenv("CRAWLER_GET_ACCOUNT_API")
             resp = requests.get(url=url, params={"sign": int(time())})
-            print(f"youtube_account > [DEBUG] login_account response | status_code:{resp.status_code}, content:{str(resp.content, encoding='utf-8')}")
+            # logger.debug(f"youtube_account > login_account response | status_code:{resp.status_code}, content:{str(resp.content, encoding='utf-8')}")
             assert resp.status_code == 200
             assert resp.json()["code"] == 0
             assert len(resp.json()["data"]) > 0
             self._format_crawler_account_response(resp.json()["data"])
             self.status = 2 # 账号设置为占用状态
-            print("youtube_account > get_new_account succeed", resp.json())
+            logger.info("youtube_account > get_new_account succeed", resp.json())
             self.print_account()
         except Exception as e:
-            print(f"youtube_account > [!] get_new_account ERROR, {e.__class__} | response:{str(resp.content, encoding='utf-8')}")
+            logger.warning(f"youtube_account > [!] get_new_account ERROR, {e.__class__} | response:{str(resp.content, encoding='utf-8')}")
 
     def login(self, is_login=False, retry:int=3):
-        '''账号登入
+        '''账号登入回调
         @params is_login: bool, retry: int
         @return None
         '''
-        url = getenv("CRAWLER_LOGIN_ACCOUNT_API")
-        print(f"youtube_account > login_account {'SUCCESS' if is_login else 'FAIL'}, id:{self.id}, username:{self.username}, password:{self.password}")
+        logger.debug(f"youtube_account > login_account {'SUCCESS' if is_login else 'FAIL'}, id:{self.id}, username:{self.username}, password:{self.password}")
         if retry <= 0:
-            print("youtube_account > [!] login_account FAILED, no more retry")
+            logger.error("youtube_account > [!] login_account FAILED, no more retry")
             # TODO 告警
             return
         try:
-            # RequestId     string `json:"request_id"`
-            # Id            int64  `json:"id"`
-            # IsLogin       bool   `json:"is_login"`
-            # Token         string `json:"token"`
-            # LastLoginUser string `json:"last_login_user"`
+            url = getenv("CRAWLER_LOGIN_ACCOUNT_API")
             reqbody = {
                 "request_id": uuid4().hex,
                 "id": self.id,
@@ -122,24 +115,24 @@ class YoutubeAccout:
                 "token": json.dumps(self.token) if is_login else "",
                 "last_login_user": self.login_name
             }
-            print(f"youtube_account > [DEBUG] login_account request | reqbody:{reqbody}")
+            # logger.debug(f"youtube_account > login_account request | reqbody:{reqbody}")
             resp = requests.post(url=url, params={"sign": int(time())}, json=reqbody)
-            print(f"youtube_account > [DEBUG] login_account response | status_code:{resp.status_code}, content:{str(resp.content, encoding='utf-8')}")
+            # logger.debug(f"youtube_account > login_account response | status_code:{resp.status_code}, content:{str(resp.content, encoding='utf-8')}")
             assert resp.status_code == 200
             assert resp.json()["code"] == 0
         except Exception as e:
-            print("youtube_account > [!] login_account ERROR", reqbody, e)
-            sleep(1)
+            logger.error("youtube_account > [!] login_account ERROR", reqbody, e)
+            sleep(2)
             self.login(is_login=is_login, retry=retry-1)
 
     def logout(self, is_invalid:bool=False, comment:str="", retry:int=3):
-        '''账号登出
+        '''账号登出回调
         @params is_invalid: bool, comment: str, retry: int
         @return None
         '''
         url = getenv("CRAWLER_LOGOUT_ACCOUNT_API") # TODO
         if retry <= 0:
-            print("youtube_account > [!] logout_account FAILED, no more retry")
+            logger.error("youtube_account > [!] logout_account FAILED, no more retry")
             # TODO 告警
             return
         try:
@@ -149,14 +142,14 @@ class YoutubeAccout:
                 "is_invalid": is_invalid,
                 "comment": comment
             }
-            # print(f"youtube_account > [DEBUG] logout_account request | reqbody:{reqbody}")
+            # logger.debug(f"youtube_account > logout_account request | reqbody:{reqbody}")
             resp = requests.post(url=url, params={"sign": int(time())}, json=reqbody)
-            print(f"youtube_account > [DEBUG] logout_account response | status_code:{resp.status_code}, content:{str(resp.content, encoding='utf-8')}")
+            # logger.debug(f"youtube_account > logout_account response | status_code:{resp.status_code}, content:{str(resp.content, encoding='utf-8')}")
             assert resp.status_code == 200
             assert resp.json()["code"] == 0
         except Exception as e:
-            print("youtube_account > [!] logout_account ERROR", e)
-            sleep(1)
+            logger.error("youtube_account > [!] logout_account ERROR", e)
+            sleep(2)
             self.logout(retry=retry-1)
 
     def _format_crawler_account_response(self, data:dict):
@@ -172,7 +165,8 @@ class YoutubeAccout:
             self.verify_email = data["verify_email"]
             self.status = data["status"]
         except Exception as e:
-            print("youtube_account > format_crawler_account_response failed", data, e)
+            logger.error("youtube_account > format_crawler_account_response failed", data, e)
+            raise e
 
     def account_auto_login(self, url:str, username:str, password:str, verify_email:str)->dict:
         '''自动登入账号
@@ -189,9 +183,9 @@ class YoutubeAccout:
                 "password": password,
                 "recovery_email": verify_email
             }
-            print(f"youtube_account > [DEBUG] account_auto_login request | url:{url} reqbody:{reqbody}")
+            logger.debug(f"youtube_account > account_auto_login request | url:{url} reqbody:{reqbody}")
             resp = requests.post(url=url,json=reqbody)
-            print(f"youtube_account > [DEBUG] account_auto_login response | status_code:{resp.status_code}, content:{str(resp.content, encoding='utf-8')}")
+            logger.debug(f"youtube_account > account_auto_login response | status_code:{resp.status_code}, content:{str(resp.content, encoding='utf-8')}")
             '''
             {
                 "code": 200,
@@ -209,16 +203,11 @@ class YoutubeAccout:
             assert resp.status_code == 200
             assert resp.json()["code"] == 200
             token = resp.json()["token"]
-            print(f"youtube_account > account_auto_login {username} succeed")
+            logger.info(f"youtube_account > account_auto_login {username} succeed")
             pprint(token)
         except Exception as e:
             # 登入失败
-            print(f"youtube_account > account_auto_login failed with {resp}", e)
-            # self.login_account(is_login=False)
-        else:
-            # 登入成功
-            # self.login_account(is_login=True)
-            pass
+            logger.error(f"youtube_account > account_auto_login failed with {resp}", e)
         finally:
             return token
 
@@ -254,10 +243,10 @@ class YoutubeAccout:
 
         # 判断path是否存在
         if not path.exists(token_path):
-            print("youtube_account > 当前账号token文件不存在")
-            return
+            logger.error("youtube_account > 当前账号token文件不存在")
+            raise FileNotFoundError(f"当前账号token文件{token_path}不存在")
         else:
-            print(f"youtube_account > 当前账号token文件路径：{token_path}")
+            logger.info(f"youtube_account > 当前账号token文件路径：{token_path}")
 
         # TODO 检验token文件格式
 
@@ -268,7 +257,7 @@ class YoutubeAccout:
         global OAUTH2_PATH
         OAUTH2_PATH = token_path[:file_name_start]
         self.yt_dlp_oauth2_path = OAUTH2_PATH
-        print(f"youtube_account > 当前服务账号缓存更新成功：{OAUTH2_PATH}")
+        logger.info(f"youtube_account > 当前服务账号缓存更新成功：{OAUTH2_PATH}")
         return
 
     def youtube_login_handler(self)->int:
@@ -287,7 +276,7 @@ class YoutubeAccout:
             # 1. 获取可用账号
             self.get_new_account()
             if self.id <= 0 or self.username == "" or self.password == "" or self.verify_email == "":
-                print("youtube_account > youtube_login_handler 获取新账号失败")
+                logger.error("youtube_account > youtube_login_handler 获取新账号失败")
                 return
 
             # 2. 登录账号获取token
@@ -300,7 +289,7 @@ class YoutubeAccout:
             )
             # token = {"access_token": "ya29.a0AcM612zSm47CaujLJib3Igp59_vQk-r1CNg7ECZcn5daavXG7riav80NoSPMwPvN-B8gm7zE-NcC46IzRkP-qBqy2363WEvIYuwq1ViHbt7DynnmMXke75XwFtEPIGqPhJfpPhvHmVN96cqPmrZ-6soPOyyC6b0pJRs459QBcHTCZRg2LymXaCgYKARESARMSFQHGX2Mi9iA6jnCDRmJK8tbIiuD9Fw0187","expires": 1727970558.819872,"refresh_token": "1//050ihnwKTZaG0CgYIARAAGAUSNwF-L9IrejCMXEAqUKRWFhKL4e2enIXHqdTrg3Q8C0B8Pq4XzK4kH642DtHPPvanz0pgrg6Xv94","token_type": "Bearer"}
             if token == {}:
-                print("youtube_account > youtube_login_handler 自动登陆账号失败, token为空")
+                logger.error("youtube_account > youtube_login_handler 自动登陆账号失败, token为空")
                 raise Exception("youtube_login_handler 自动登陆账号失败, token为空")
             self.token = token
 
@@ -310,7 +299,7 @@ class YoutubeAccout:
                 save_dir=f"./cache/yt_dlp_{int(time())}/youtube-oauth2"
             )
             if token_path == "":
-                print("youtube_account > youtube_login_handler 保存token失败")
+                logger.error("youtube_account > youtube_login_handler 保存token失败")
                 raise Exception("youtube_login_handler 保存token失败")
             self.yt_dlp_token_path = token_path
 
@@ -320,8 +309,7 @@ class YoutubeAccout:
             # 5. 更新状态
             self.login(is_login=True)
         except Exception as e:
-            print("youtube_account > [!] youtube_login_handler ERROR", e.__class__)
-            self.login(is_login=False)
+            logger.error("youtube_account > [!] youtube_login_handler ERROR", e.__class__)
             # 告警
             notice_text = f"[Youtube Crawler ACCOUNT | ERROR] 自动换号失败. \
                 \n\t登入方: {self.login_name} \
@@ -330,6 +318,7 @@ class YoutubeAccout:
                 \n\tERROR: {e} \
                 \n\t告警时间: {get_now_time_string()}"
             alarm_lark_text(webhook=getenv("LARK_ERROR_WEBHOOK"), text=notice_text)
+            self.login(is_login=False)
             raise e
         else:
             # 告警
