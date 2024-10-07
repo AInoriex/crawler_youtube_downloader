@@ -86,7 +86,7 @@ def main_pipeline(pid):
         """
         while 1:
             try:
-                assert ac.youtube_login_handler() == 0 # 需要登陆成功才能继续处理
+                ac.youtube_login_handler() # 需要登陆成功才能继续处理
             except Exception as e:
                 logger.error(f"Pipeline > 初始化账号出错，{e}")
                 print(f"Pipeline > pid {pid} youtube_login_handler failed, sleeping 30s...")
