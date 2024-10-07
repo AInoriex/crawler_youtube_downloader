@@ -45,7 +45,8 @@ class YoutubeAccout:
         self.is_process:bool = False # 是否在处理换号
 
     def __del__(self):
-        self.logout(is_invalid=False, comment="账号登出") 
+        # self.logout(is_invalid=False, comment="账号登出")
+        pass
 
     def print_account(self):
         '''
