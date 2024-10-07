@@ -1,3 +1,8 @@
+# import sys
+# import os
+# work_dir = os.path.realpath(os.path.dirname(sys.argv[0]))
+# sys.path.append(os.path.join(work_dir, ".."))
+
 from os import getenv, path, makedirs
 import requests
 from time import time, sleep
@@ -27,11 +32,11 @@ class YoutubeAccout:
         yt_dlp_oauth2_path (str): yt-dlp OAUTH2_PATH 路径
         yt_dlp_token_path (str): token_data.json 存放路径
     '''
-    def __init__(self):
-        self.id = 0 # 账号id
-        self.username = "" # 用户名
-        self.password = "" # 密码
-        self.verify_email = "" # 验证邮箱
+    def __init__(self, id:int=0, username:str="", password:str="", verify_email:str=""):
+        self.id = id # 账号id
+        self.username = username # 用户名
+        self.password = password # 密码
+        self.verify_email = verify_email # 验证邮箱
         self.login_name = getenv("SERVER_NAME")
         self.status = None # 0: 初始化, 1: 可登陆, 2: 占用, -1: 失效
         self.token = "" # 当前token值
@@ -40,7 +45,7 @@ class YoutubeAccout:
         self.is_process:bool = False # 是否在处理换号
 
     def __del__(self):
-        self.logout() 
+        self.logout(is_invalid=False, comment="账号登出") 
 
     def print_account(self):
         '''
@@ -142,7 +147,7 @@ class YoutubeAccout:
                 "is_invalid": is_invalid,
                 "comment": comment
             }
-            # logger.debug(f"youtube_account > logout_account request | reqbody:{reqbody}")
+            logger.debug(f"youtube_account > logout_account request | reqbody:{reqbody}")
             resp = requests.post(url=url, params={"sign": int(time())}, json=reqbody)
             # logger.debug(f"youtube_account > logout_account response | status_code:{resp.status_code}, content:{str(resp.content, encoding='utf-8')}")
             assert resp.status_code == 200
@@ -356,7 +361,9 @@ class YoutubeAccout:
 
 
 if __name__ == "__main__":
-    ac = YoutubeAccout()
+    ac = YoutubeAccout(
+        id=17,
+    )
     # ac.youtube_login_handler()
 
     # token = ac.account_auto_login(
@@ -393,3 +400,6 @@ if __name__ == "__main__":
     # print(f"youtube_account > [DEBUG] login_account request | reqbody:{reqbody}")
     # resp = requests.post(url=url, params={"sign": int(time())}, json=reqbody)
     # print(f"youtube_account > [DEBUG] login_account response | status_code:{resp.status_code}, content:{str(resp.content, encoding='utf-8')}")
+
+    # ac.logout(is_invalid=False, comment="账号登出")
+    ac.logout(is_invalid=True, comment="账号失效")  
