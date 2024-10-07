@@ -25,7 +25,7 @@ def get_video_for_download(query_id=0, query_source_type=int(getenv("DOWNLOAD_SO
         }
         # print(f"get_video_for_download > Get list Request | url:{url} params:{params}")
         resp = get(url=url, params=params)
-        print(f"get_video_for_download > Get list Response | status_code:{resp.status_code}, content:{resp.content}")
+        print(f"get_video_for_download > Get list Response | status_code:{resp.status_code}, content:{str(resp.content, encoding='utf-8')}")
         assert resp.status_code == 200
         resp_json = resp.json()
         # print("get_video_for_download > Get list Response detail | status_code:%d, content:%s"%(resp_json["code"], resp_json["msg"]))

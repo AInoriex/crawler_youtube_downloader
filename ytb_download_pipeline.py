@@ -6,6 +6,7 @@ import json
 from os import getenv, walk, path, remove
 from time import time, sleep
 from urllib.parse import urljoin
+from traceback import format_exc
 from handler.youtube import is_touch_fish_time, download_by_watch_url, get_cloud_save_path_by_language
 # from handler.bilibili import download as bilibili_download
 # from handler.ximalaya import download as ximalaya_download
@@ -88,8 +89,7 @@ def main_pipeline(pid):
             try:
                 ac.youtube_login_handler() # 需要登陆成功才能继续处理
             except Exception as e:
-                logger.error(f"Pipeline > 初始化账号出错，{e}")
-                print(f"Pipeline > pid {pid} youtube_login_handler failed, sleeping 30s...")
+                logger.error(f"Pipeline > 初始化账号出错, 等待30s重试, traceback: {format_exc()}")
                 sleep(30)
                 continue
             else:
@@ -206,7 +206,6 @@ def main_pipeline(pid):
                 \n\t共处理了{format_second_to_time_string(int(time_fail-time_1))} \
                 \n\tIP: {local_ip} | {get_public_ip()} \
                 \n\t账号信息: {ac.get_account_info()} \
-                \n\t错误信息: {e} \
                 \n\t告警时间: {get_now_time_string()}"
             logger.error(notice_text)
             alarm_lark_text(webhook=getenv("LARK_ERROR_WEBHOOK"), text=notice_text)
@@ -224,7 +223,6 @@ def main_pipeline(pid):
                     youtube_sleep(is_succ=False, run_count=run_count, download_round=download_round)
                 else:
                     logger.warning(f"Pipeline > [!] 开始尝试切换新账号使用")
-                    # ac.youtube_login_handler()
                     handler_switch_account(ac)
             else:
                 logger.info(f"Pipeline > [!] 当前未开启自动切换账号模式")
@@ -247,7 +245,7 @@ def main_pipeline(pid):
                 \n\tCloud_Link: {video.cloud_path} \
                 \n\t共处理了{format_second_to_time_string(int(time_fail-time_1))} \
                 \n\tIP: {local_ip} | {get_public_ip()} \
-                \n\tERROR: {e} \
+                \n\tERROR: {format_exc()} \
                 \n\t告警时间: {get_now_time_string()}"
             logger.error(notice_text)
             alarm_lark_text(webhook=getenv("LARK_NOTICE_WEBHOOK"), text=notice_text)
