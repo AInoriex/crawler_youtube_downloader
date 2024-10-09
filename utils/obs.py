@@ -29,6 +29,9 @@ def callback(transferredAmount, totalAmount, totalSeconds):
     # 获取上传进度百分比
     # print(transferredAmount * 100.0 / totalAmount)
     trans_percent = transferredAmount * 100.0 / totalAmount
+    # 保留一半控制台输出
+    if int(trans_percent) % 2 == 0:
+        return
     print(f"Obs > upload_file callback {trans_speed:.2f}KB/s | {trans_percent:.2f}%")
 
 # 上传
@@ -104,7 +107,7 @@ def upload_file_v2(from_path:str, to_path:str)->str:
         # True表示开启断点续传
         enableCheckpoint = True
         # 断点续传上传
-        resp = obsClient.uploadFile(bucketName, objectKey, uploadFile, partSize, taskNum, enableCheckpoint, encoding_type='url')
+        resp = obsClient.uploadFile(bucketName, objectKey, uploadFile, partSize, taskNum, enableCheckpoint, encoding_type='url', progressCallback=callback)
 
         # 返回码为2xx时，接口调用成功，否则接口调用失败
         if resp.status < 300:
