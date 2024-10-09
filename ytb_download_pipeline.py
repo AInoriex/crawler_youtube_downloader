@@ -78,34 +78,6 @@ def youtube_sleep(is_succ:bool, run_count:int, download_round:int):
 
 def main_pipeline(pid):
     sleep(60 * pid)
-    from handler.youtube_accout import YoutubeAccout, OAUTH2_PATH
-    def handler_switch_account(ac:YoutubeAccout):
-        """
-        账号轮询登陆直至成功
-
-        :param ac: YoutubeAccout, 账号实例
-        :return: None
-        """
-        while 1:
-            try:
-                ac.youtube_login_handler() # 需要登陆成功才能继续处理
-            except Exception as e:
-                logger.error(f"Pipeline > 初始化账号出错, 等待30s重试, traceback: {format_exc()}")
-                sleep(30)
-                continue
-            else:
-                logger.info(f"Pipeline > 初始化账号成功，{ac.id} | {ac.username}")
-                break
-    
-    if OAUTH2_PATH == "":
-        if getenv("CRAWLER_SWITCH_ACCOUNT_ON", False) == "True":
-            ac = YoutubeAccout()
-            logger.info("Pipeline > 账号为空，准备初始化账号")
-            handler_switch_account(ac)
-        else:
-            logger.warning("Pipeline > [!] 当前OAuth2账号为空")
-
-
     logger.debug(f"Pipeline > pid {pid} started")
     download_round = int(1)      # 当前下载轮数
     run_count = int(0)           # 持续处理的任务个数
@@ -282,7 +254,34 @@ def main_pipeline(pid):
             download_round = run_count//LIMIT_LAST_COUNT + 1
 
 
+from handler.youtube_accout import YoutubeAccout, OAUTH2_PATH
+def handler_switch_account(ac:YoutubeAccout):
+        """
+        账号轮询登陆直至成功
+
+        :param ac: YoutubeAccout, 账号实例
+        :return: None
+        """
+        while 1:
+            try:
+                ac.youtube_login_handler() # 需要登陆成功才能继续处理
+            except Exception as e:
+                logger.error(f"Pipeline > 初始化账号出错, 等待30s重试, traceback: {format_exc()}")
+                sleep(30)
+                continue
+            else:
+                logger.info(f"Pipeline > 初始化账号成功，{ac.id} | {ac.username}")
+                break
+
 if __name__ == "__main__":
+    if OAUTH2_PATH == "":
+        if getenv("CRAWLER_SWITCH_ACCOUNT_ON", False) == "True":
+            ac = YoutubeAccout()
+            logger.info("Pipeline > 账号为空，准备初始化账号")
+            handler_switch_account(ac)
+        else:
+            logger.warning("Pipeline > [!] 当前OAuth2账号为空")
+
     import multiprocessing
     from sys import exit
     # PROCESS_NUM = 1 #同时处理的进程数量
