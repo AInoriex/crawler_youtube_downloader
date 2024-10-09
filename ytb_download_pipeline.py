@@ -220,17 +220,19 @@ def main_pipeline(pid):
             if continue_fail_count > LIMIT_FAIL_COUNT:
                 logger.error(f"Pipeline > pid {pid} unexpectable exit beceuse of too much fail count: {continue_fail_count}")
                 exit()
+            # 暂不支持自动切换号
+            break
             # 换号
-            if getenv("CRAWLER_SWITCH_ACCOUNT_ON", False) == "True":
-                if ac.is_process:
-                    logger.warning(f"Pipeline > [!] 当前正在换号中")
-                    youtube_sleep(is_succ=False, run_count=run_count, download_round=download_round)
-                else:
-                    logger.warning(f"Pipeline > [!] 开始尝试切换新账号使用")
-                    handler_switch_account(ac)
-            else:
-                logger.info(f"Pipeline > [!] 当前未开启自动切换账号模式")
-            continue
+            # if getenv("CRAWLER_SWITCH_ACCOUNT_ON", False) == "True":
+            #     if ac.is_process:
+            #         logger.warning(f"Pipeline > [!] 当前正在换号中")
+            #         youtube_sleep(is_succ=False, run_count=run_count, download_round=download_round)
+            #     else:
+            #         logger.warning(f"Pipeline > [!] 开始尝试切换新账号使用")
+            #         handler_switch_account(ac)
+            # else:
+            #     logger.info(f"Pipeline > [!] 当前未开启自动切换账号模式")
+            # continue
         except Exception as e:
             continue_fail_count += 1
             time_fail = time()
