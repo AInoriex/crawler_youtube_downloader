@@ -33,6 +33,12 @@ def callback(transferredAmount, totalAmount, totalSeconds):
 
 # 上传
 def upload_file(from_path:str, to_path:str)->str:
+    """
+    上传文件到OBS（单个文件大小须小于5G）
+    :param from_path: 文件/文件夹的完整路径
+    :param to_path: 对象名，即上传后的文件名
+    :return: 上传后的文件url
+    """
     if to_path.startswith("/"):
         to_path = to_path.replace("/", "", 1)
     try:
@@ -45,7 +51,7 @@ def upload_file(from_path:str, to_path:str)->str:
         # headers.contentType = 'text/plain'
         bucketName = bucket
         # 对象名，即上传后的文件名
-        # objectKey = "QUWAN_DATA/Vietnam/debug/test.txt"
+        # objectKey = "/data/test.txt"
         objectKey = to_path
         # 待上传文件/文件夹的完整路径，如aa/bb.txt，或aa/
         # file_path = 'download/test.txt'
@@ -71,9 +77,50 @@ def upload_file(from_path:str, to_path:str)->str:
         print('Obs > 上传失败' + traceback.format_exc())
         raise e
     else:
-        # https://obs-prod-hw-bj-xp-ai-train.obs.cn-north-4.myhuaweicloud.com\QUWAN_DATA/Vietnam/3ZXxN4zzTz8.webm
         return urljoin(os.getenv("OBS_URLBASE"), to_path)
 
+    finally:
+        # 关闭obsClient
+        obsClient.close()
+
+def upload_file_v2(from_path:str, to_path:str)->str:
+    """
+    上传文件到OBS（适用于大于5G大文件上传）
+    :param from_path: 文件/文件夹的完整路径
+    :param to_path: 对象名，即上传后的文件名
+    :return: 上传后的文件url
+    """
+    if to_path.startswith("/"):
+            to_path = to_path.replace("/", "", 1)
+    try:
+        obsClient = ObsClient(access_key_id=ak, secret_access_key=sk, server=server)
+        bucketName = bucket
+        objectKey = to_path
+        uploadFile = from_path
+        # 分段上传的并发数
+        taskNum = 5
+        # 分段的大小，单位字节，此处为10MB
+        partSize = 10 * 1024 * 1024
+        # True表示开启断点续传
+        enableCheckpoint = True
+        # 断点续传上传
+        resp = obsClient.uploadFile(bucketName, objectKey, uploadFile, partSize, taskNum, enableCheckpoint, encoding_type='url')
+
+        # 返回码为2xx时，接口调用成功，否则接口调用失败
+        if resp.status < 300:
+            print('Obs > 上传OBS成功')
+            print(f'from_path: {from_path}, to_path: {to_path}')
+        else:
+            print('Obs > [!] 上传OBS失败')
+            print('requestId:', resp.requestId)
+            print('errorCode:', resp.errorCode)
+            print('errorMessage:', resp.errorMessage)
+            raise Exception(f"上传OBS失败, resp:{resp.status} {resp.errorCode} {resp.errorMessage} {resp.requestId}")
+    except Exception as e:
+        print('Obs > 上传失败' + traceback.format_exc())
+        raise e
+    else:
+        return urljoin(os.getenv("OBS_URLBASE"), to_path)
     finally:
         # 关闭obsClient
         obsClient.close()

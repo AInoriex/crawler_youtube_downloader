@@ -36,6 +36,7 @@ CLOUD_TYPE = "obs" if getenv("OBS_ON", False) == "True" else "cos"
 ''' 云端存储类别，上传cos或者obs '''
 if CLOUD_TYPE == "obs":
     from utils.obs import upload_file as obs_upload_file
+    from utils.obs import upload_file_v2 as obs_upload_file_v2
 elif CLOUD_TYPE == "cos":
     from utils.cos import upload_file as cos_upload_file
 else:
@@ -152,7 +153,10 @@ def main_pipeline(pid):
             logger.info(f"Pipeline > pid {pid} processing {id} is ready to upload `{CLOUD_TYPE}`, from: {download_path}, to: {cloud_path}")
             if CLOUD_TYPE == "obs":
                 # cloud_path = urljoin(getenv("OBS_SAVEPATH"), path.basename(download_path))
-                cloud_link = obs_upload_file(
+                # cloud_link = obs_upload_file(
+                #     from_path=download_path, to_path=cloud_path
+                # )
+                cloud_link = obs_upload_file_v2(
                     from_path=download_path, to_path=cloud_path
                 )
             elif CLOUD_TYPE == "cos":
