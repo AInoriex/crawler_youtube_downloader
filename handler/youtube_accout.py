@@ -275,7 +275,7 @@ class YoutubeAccout:
         3. token保存到文件
         4. 更新yt-dlp需要的oauth2路径
 
-        :return: int, 0: success, -1: failed
+        :return: 
         """
         try:
             self.is_process = True

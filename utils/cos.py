@@ -38,7 +38,6 @@ def upload_file(from_path:str, to_path:str)->str:
         Bucket=os.getenv("COS_BUCKET"),
         # LocalFilePath='local.txt',
         LocalFilePath=from_path,
-        # Key='/QUWAN_DATA/xyh/local.txt',
         Key=cos_path,
         PartSize=1,
         MAXThread=10,

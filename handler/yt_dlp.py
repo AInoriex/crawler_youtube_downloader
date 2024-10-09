@@ -56,7 +56,7 @@ def yt_dlp_init(v:Video, save_path:str, video_ext:str="mp4", audio_ext:str="m4a"
         # 下载格式配置
         # # 提取视频
         # "format": f"bestvideo[ext={video_ext}]+bestaudio[ext={audio_ext}]/best[ext={video_ext}]/best",
-        "format": f"bestvideo[height<=1080]+bestaudio/bestvideo[filesize<=5000M]+bestaudio/bestvideo+bestaudio/best",
+        "format": f"bestvideo[height<=1080]+bestaudio/bestvideo[filesize<=3000M]+bestaudio/bestvideo+bestaudio/best",
         "postprocessors": [{
             "key": "FFmpegVideoConvertor",
             "preferedformat": video_ext,  # one of avi, flv, mkv, mp4, ogg, webm

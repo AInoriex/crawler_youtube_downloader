@@ -65,9 +65,10 @@ def DatabaseApisTest():
     youtube_api.update_video_record(v)
 
 def ObsUploadTest():
-    from_path = str("C:\\Users\\AInoriex\\Pictures\\faceswap_photos\\")
-    to_path = "QUWAN_DATA/Vietnam/debug/"
-    obs.upload_file(from_path, to_path)
+    from_path = r"/path/to/file.txt"
+    to_path = r"/data/debug/xxx.txt"
+    # obs.upload_file(from_path, to_path)
+    obs.upload_file_v2(from_path, to_path)
 
 if __name__ == "__main__":
     main()
