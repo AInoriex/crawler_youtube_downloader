@@ -315,7 +315,7 @@ class YoutubeAccout:
             # 5. 更新状态
             self.login(is_login=True)
         except Exception as e:
-            logger.error("youtube_account > [!] youtube_login_handler ERROR", e.__class__)
+            logger.error("youtube_account > [!] youtube_login_handler ERROR", e.__str__)
             # 告警
             notice_text = f"[Youtube Crawler ACCOUNT | ERROR] 自动换号失败. \
                 \n\t登入方: {self.login_name} \
@@ -324,7 +324,8 @@ class YoutubeAccout:
                 \n\tERROR: {e} \
                 \n\t告警时间: {get_now_time_string()}"
             alarm_lark_text(webhook=getenv("LARK_ERROR_WEBHOOK"), text=notice_text)
-            self.login(is_login=False)
+            if self.id > 0:
+                self.login(is_login=False)
             raise e
         else:
             # 告警
