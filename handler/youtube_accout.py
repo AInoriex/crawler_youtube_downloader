@@ -283,7 +283,7 @@ class YoutubeAccout:
             self.get_new_account()
             if self.id <= 0 or self.username == "" or self.password == "" or self.verify_email == "":
                 logger.error("youtube_account > youtube_login_handler 获取新账号失败")
-                return
+                raise Exception("获取新账号失败")
 
             # 2. 登录账号获取token
             print("youtube_account > youtube_login_handler 正在自动登陆账号中，请稍后...")
