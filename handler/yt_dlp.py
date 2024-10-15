@@ -8,9 +8,10 @@ from utils.utime import random_sleep
 
 def make_path(save_path):
     ''' 预创建下载目录 '''
-    # |—— audio
-    # |—— info
-    save_audio_path = path.join(save_path, "audio")
+    # save_path
+    #   |—— resource
+    #   └── info
+    save_audio_path = path.join(save_path, "resource")
     save_info_path = path.join(save_path, "info")
     makedirs(save_audio_path, exist_ok=True)
     makedirs(save_info_path, exist_ok=True)
@@ -19,7 +20,12 @@ def make_path(save_path):
 def clean_path(save_path):
     ''' 清理下载目录 '''
     rmtree(save_path)
-    print("已清理下载目录: ", save_path)
+    print("Yt-dlp > 已清理旧目录及文件: ", save_path)
+    save_audio_path = path.join(save_path, "resource")
+    save_info_path = path.join(save_path, "info")
+    makedirs(save_audio_path, exist_ok=True)
+    makedirs(save_info_path, exist_ok=True)
+    print("Yt-dlp > 已初始化目录: ", save_path)
     pass
 
 def yt_dlp_init(v:Video, save_path:str, video_ext:str="mp4", audio_ext:str="m4a", subtitle_ext:str="srt")->dict:
