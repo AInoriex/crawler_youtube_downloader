@@ -8,6 +8,7 @@ from time import time, sleep
 from urllib.parse import urljoin
 from traceback import format_exc
 from handler.youtube import is_touch_fish_time, download_by_watch_url, get_cloud_save_path_by_language
+from handler.yt_dlp import clean_path
 # from handler.bilibili import download as bilibili_download
 # from handler.ximalaya import download as ximalaya_download
 from database.youtube_api import get_video_for_download, update_video_record
@@ -41,6 +42,7 @@ elif CLOUD_TYPE == "cos":
     from utils.cos import upload_file as cos_upload_file
 else:
     raise NotImplementedError
+DOWNLOAD_PATH = getenv('DOWNLOAD_PATH')
 
 # ---------------------------------------------------------------
 
@@ -110,7 +112,7 @@ def main_pipeline(pid):
             time_1 = time()
 
             # 下载(本地存在不会被覆盖，续传)
-            download_path = download_by_watch_url(v=video, save_path=getenv('DOWNLOAD_PATH'))
+            download_path = download_by_watch_url(v=video, save_path=DOWNLOAD_PATH)
             time_2 = time()
             spend_download_time = max(time_2 - time_1, 0.01) #下载花费时间
             
@@ -274,6 +276,7 @@ def handler_switch_account(ac:YoutubeAccout):
                 break
 
 if __name__ == "__main__":
+    # 初始化账号
     if OAUTH2_PATH == "":
         if getenv("CRAWLER_SWITCH_ACCOUNT_ON", False) == "True":
             ac = YoutubeAccout()
@@ -281,6 +284,9 @@ if __name__ == "__main__":
             handler_switch_account(ac)
         else:
             logger.warning("Pipeline > [!] 当前OAuth2账号为空")
+
+    # 清理旧目录文件
+    clean_path(DOWNLOAD_PATH)
 
     import multiprocessing
     from sys import exit

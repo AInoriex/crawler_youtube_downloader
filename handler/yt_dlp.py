@@ -1,5 +1,5 @@
 import traceback
-from os import path, makedirs, getenv
+from os import path, makedirs, getenv, rmdir
 from handler.info import dump_info
 from yt_dlp import YoutubeDL
 from database.youtube_api import Video
@@ -14,6 +14,12 @@ def make_path(save_path):
     makedirs(save_audio_path, exist_ok=True)
     makedirs(save_info_path, exist_ok=True)
     return save_audio_path, save_info_path
+
+def clean_path(save_path):
+    ''' 清理下载目录 '''
+    rmdir(save_path)
+    print("已清理下载目录: ", save_path)
+    pass
 
 def yt_dlp_init(v:Video, save_path:str, video_ext:str="mp4", audio_ext:str="m4a", subtitle_ext:str="srt")->dict:
     save_media_path, save_info_path = make_path(save_path)
