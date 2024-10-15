@@ -117,7 +117,6 @@ def main_pipeline(pid):
             spend_download_time = max(time_2 - time_1, 0.01) #下载花费时间
             
             # 上传云端
-            logger.info(f"Pipeline > pid {pid} processing {id} is ready to upload `{CLOUD_TYPE}`, from: {download_path}, to: {cloud_path}")
             cloud_path = urljoin(
                 get_cloud_save_path_by_language(
                     save_path=cloud_save_path if cloud_save_path !='' else getenv("CLOUD_SAVE_PATH"),
@@ -125,6 +124,7 @@ def main_pipeline(pid):
                 ), 
                 path.basename(download_path)
             )
+            logger.info(f"Pipeline > pid {pid} processing {id} is ready to upload `{CLOUD_TYPE}`, from: {download_path}, to: {cloud_path}")
             if CLOUD_TYPE == "obs":
                 # cloud_path = urljoin(getenv("OBS_SAVEPATH"), path.basename(download_path))
                 # cloud_link = obs_upload_file(
