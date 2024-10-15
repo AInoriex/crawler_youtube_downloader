@@ -19,8 +19,9 @@ def make_path(save_path):
 
 def clean_path(save_path):
     ''' 清理下载目录 '''
-    rmtree(save_path)
-    print("Yt-dlp > 已清理旧目录及文件: ", save_path)
+    if path.exists(save_path):
+        rmtree(save_path)
+        print("Yt-dlp > 已清理旧目录及文件: ", save_path)
     save_audio_path = path.join(save_path, "resource")
     save_info_path = path.join(save_path, "info")
     makedirs(save_audio_path, exist_ok=True)
