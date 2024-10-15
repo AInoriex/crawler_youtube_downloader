@@ -1,5 +1,5 @@
 import traceback
-from os import path, makedirs, getenv, rmdir
+from os import path, makedirs, getenv, removedirs
 from handler.info import dump_info
 from yt_dlp import YoutubeDL
 from database.youtube_api import Video
@@ -17,7 +17,7 @@ def make_path(save_path):
 
 def clean_path(save_path):
     ''' 清理下载目录 '''
-    rmdir(save_path)
+    removedirs(save_path)
     print("已清理下载目录: ", save_path)
     pass
 
@@ -290,7 +290,6 @@ def download_by_playlist_url(playlist_url:str, save_path:str, ydl_opts={}, max_l
                     random_sleep(rand_st=5, rand_range=5)
     print(f"download_by_playlist_url > 该列表下载完毕，成功: {success_count}条")
     return result_paths
-
 
 def yt_dlp_subtitles_handler():
     ''' 处理下载字幕 '''
