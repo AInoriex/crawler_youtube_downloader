@@ -117,6 +117,7 @@ def main_pipeline(pid):
             spend_download_time = max(time_2 - time_1, 0.01) #下载花费时间
             
             # 上传云端
+            logger.info(f"Pipeline > pid {pid} processing {id} is ready to upload `{CLOUD_TYPE}`, from: {download_path}, to: {cloud_path}")
             cloud_path = urljoin(
                 get_cloud_save_path_by_language(
                     save_path=cloud_save_path if cloud_save_path !='' else getenv("CLOUD_SAVE_PATH"),
@@ -124,7 +125,6 @@ def main_pipeline(pid):
                 ), 
                 path.basename(download_path)
             )
-            logger.info(f"Pipeline > pid {pid} processing {id} is ready to upload `{CLOUD_TYPE}`, from: {download_path}, to: {cloud_path}")
             if CLOUD_TYPE == "obs":
                 # cloud_path = urljoin(getenv("OBS_SAVEPATH"), path.basename(download_path))
                 # cloud_link = obs_upload_file(
@@ -234,7 +234,7 @@ def main_pipeline(pid):
                 logger.error(f"Pipeline > pid {pid} unexpectable exit beceuse of too much fail count: {continue_fail_count}")
                 alarm_lark_text(webhook=getenv("LARK_ERROR_WEBHOOK"), text=notice_text)
                 if getenv("CRAWLER_SWITCH_ACCOUNT_ON", False) == "True":
-                    ac.logout(is_invalid=False, comment=f"{SERVER_NAME}失败过多退出") # 退出登陆
+                    ac.logout(is_invalid=True, comment=f"{SERVER_NAME}失败过多退出, {e}") # 退出登陆
                 exit()
             youtube_sleep(is_succ=False, run_count=run_count, download_round=download_round)
             continue
