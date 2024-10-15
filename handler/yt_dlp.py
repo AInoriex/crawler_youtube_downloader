@@ -1,5 +1,6 @@
 import traceback
 from os import path, makedirs, getenv, removedirs
+from shutil import rmtree
 from handler.info import dump_info
 from yt_dlp import YoutubeDL
 from database.youtube_api import Video
@@ -17,7 +18,7 @@ def make_path(save_path):
 
 def clean_path(save_path):
     ''' 清理下载目录 '''
-    removedirs(save_path)
+    rmtree(save_path)
     print("已清理下载目录: ", save_path)
     pass
 
