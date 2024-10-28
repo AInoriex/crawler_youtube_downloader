@@ -15,10 +15,6 @@ from utils import logger
 
 logger = logger.init_logger("youtube_account")
 
-OAUTH2_PATH = getenv("YTB_OAUTH2_PATH") if getenv("YTB_OAUTH2_PATH") else ""
-''' YouTube账号缓存目录'''
-logger.info(f"youtube_account > 初始化账号cache路径：{OAUTH2_PATH}")
-
 class YoutubeAccout:
     '''
     Youtube账号 Attributes:
@@ -32,7 +28,13 @@ class YoutubeAccout:
         yt_dlp_oauth2_path (str): yt-dlp OAUTH2_PATH 路径
         yt_dlp_token_path (str): token_data.json 存放路径
     '''
-    def __init__(self, id:int=0, username:str="", password:str="", verify_email:str=""):
+    def __init__(self, 
+            id:int=0, 
+            username:str="", 
+            password:str="", 
+            verify_email:str="",
+            yt_dlp_oauth2_path=getenv("YTB_OAUTH2_PATH") if getenv("YTB_OAUTH2_PATH") else ""
+        ):
         self.id = id # 账号id
         self.username = username # 用户名
         self.password = password # 密码
@@ -40,7 +42,7 @@ class YoutubeAccout:
         self.login_name = getenv("SERVER_NAME")
         self.status = None # 0: 初始化, 1: 可登陆, 2: 占用, -1: 失效
         self.token = "" # 当前token值
-        self.yt_dlp_oauth2_path = OAUTH2_PATH # yt-dlp OAUTH2_PATH 路径
+        self.yt_dlp_oauth2_path = yt_dlp_oauth2_path # yt-dlp OAUTH2_PATH 路径
         self.yt_dlp_token_path = "" # token_data.json 存放路径
         # self.is_process:bool = False # 是否在处理换号
 
@@ -53,13 +55,13 @@ class YoutubeAccout:
         打印当前youtube账号信息
         '''
         print("┌───────────── youtube account info ─────────────┐")
-        print("youtube_account > id:", self.id)
-        print("youtube_account > username:", self.username)
-        print("youtube_account > password:", self.password)
-        print("youtube_account > verify_email:", self.verify_email)
-        print("youtube_account > login_name:", self.login_name)
-        print("youtube_account > status:", self.status)
-        print("youtube_account > token:", self.token)
+        print("> id:", self.id)
+        print("> username:", self.username)
+        print("> password:", self.password)
+        print("> verify_email:", self.verify_email)
+        print("> login_name:", self.login_name)
+        print("> status:", self.status)
+        print("> token:", self.token)
         print("└─────────────  youtube account info ─────────────┘ ")
         return
 
@@ -100,7 +102,7 @@ class YoutubeAccout:
             logger.info("youtube_account > get_new_account succeed", resp.json())
             self.print_account()
         except Exception as e:
-            logger.warning(f"youtube_account > [!] get_new_account ERROR, {e.__class__} | response:{str(resp.content, encoding='utf-8')}")
+            logger.warning(f"youtube_account > [!] get_new_account ERROR {e.__class__}, status_code:{resp.status_code}, content:{str(resp.content, encoding='utf-8')}, error:{e}")
 
     def login(self, is_login=False, retry:int=3):
         '''账号登入回调
@@ -127,7 +129,7 @@ class YoutubeAccout:
             assert resp.status_code == 200
             assert resp.json()["code"] == 0
         except Exception as e:
-            logger.error("youtube_account > [!] login_account ERROR", reqbody, e)
+            logger.error(f"youtube_account > [!] login_account ERROR, status_code:{resp.status_code}, content:{str(resp.content, encoding='utf-8')}, error:{e}")
             sleep(2)
             self.login(is_login=is_login, retry=retry-1)
 
@@ -148,13 +150,13 @@ class YoutubeAccout:
                 "is_invalid": is_invalid,
                 "comment": comment
             }
-            logger.debug(f"youtube_account > logout_account request | reqbody:{reqbody}")
+            # logger.debug(f"youtube_account > logout_account request | reqbody:{reqbody}")
             resp = requests.post(url=url, params={"sign": int(time())}, json=reqbody)
             # logger.debug(f"youtube_account > logout_account response | status_code:{resp.status_code}, content:{str(resp.content, encoding='utf-8')}")
             assert resp.status_code == 200
             assert resp.json()["code"] == 0
         except Exception as e:
-            logger.error("youtube_account > [!] logout_account ERROR", e)
+            logger.error(f"youtube_account > [!] logout_account ERROR, status_code:{resp.status_code}, content:{str(resp.content, encoding='utf-8')}, error:{e}")
             sleep(2)
             self.logout(retry=retry-1)
 
@@ -189,9 +191,9 @@ class YoutubeAccout:
                 "password": password,
                 "recovery_email": verify_email
             }
-            logger.debug(f"youtube_account > account_auto_login request | url:{url} reqbody:{reqbody}")
+            # logger.debug(f"youtube_account > account_auto_login request | url:{url} reqbody:{reqbody}")
             resp = requests.post(url=url,json=reqbody)
-            logger.debug(f"youtube_account > account_auto_login response | status_code:{resp.status_code}, content:{str(resp.content, encoding='utf-8')}")
+            # logger.debug(f"youtube_account > account_auto_login response | status_code:{resp.status_code}, content:{str(resp.content, encoding='utf-8')}")
             '''
             {
                 "code": 200,
@@ -210,10 +212,10 @@ class YoutubeAccout:
             assert resp.json()["code"] == 200
             token = resp.json()["token"]
             logger.info(f"youtube_account > account_auto_login {username} succeed")
-            pprint(token)
+            # pprint(token)
         except Exception as e:
             # 登入失败
-            logger.error(f"youtube_account > account_auto_login failed with {resp}", e)
+            logger.error(f"youtube_account > account_auto_login failed with status_code:{resp.status_code}, content:{str(resp.content, encoding='utf-8')}, error:{e}")
         finally:
             return token
 
@@ -316,7 +318,7 @@ class YoutubeAccout:
             notice_text = f"[Youtube Crawler ACCOUNT | ERROR] 自动换号失败. \
                 \n\t登入方: {self.login_name} \
                 \n\t账密: {self.id} | {self.username} {self.password} \
-                \n\tOAUTH2_PATH: {OAUTH2_PATH} \
+                \n\tOAUTH2_PATH: {self.yt_dlp_oauth2_path} \
                 \n\tERROR: {e} \
                 \n\t告警时间: {get_now_time_string()}"
             alarm_lark_text(webhook=getenv("LARK_ERROR_WEBHOOK"), text=notice_text)
@@ -328,7 +330,7 @@ class YoutubeAccout:
             notice_text = f"[Youtube Crawler ACCOUNT | INFO] 自动换号成功. \
                 \n\t登入方: {self.login_name} \
                 \n\t账密: {self.id} | {self.username} {self.password} \
-                \n\tOAUTH2_PATH: {OAUTH2_PATH} \
+                \n\tOAUTH2_PATH: {self.yt_dlp_oauth2_path} \
                 \n\tToken Path: {self.yt_dlp_token_path} \
                 \n\tToken Content: {self.token} \
                 \n\t告警时间: {get_now_time_string()}"
