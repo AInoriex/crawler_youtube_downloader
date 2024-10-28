@@ -78,7 +78,7 @@ def youtube_sleep(is_succ:bool, run_count:int, download_round:int):
         else:
             random_sleep(rand_st=10, rand_range=20)
 
-def main_pipeline(pid):
+def main_pipeline(pid, ac:YoutubeAccout):
     sleep(60 * pid)
     logger.debug(f"Pipeline > pid {pid} started")
     download_round = int(1)      # 当前下载轮数
@@ -101,12 +101,15 @@ def main_pipeline(pid):
             logger.warning(f"Pipeline > pid {pid} get invalid video, continue...")
             random_sleep(rand_st=20, rand_range=10)
             continue
-        id = video.id
-        link = video.source_link
-        info = json.loads(video.info)
-        cloud_save_path = info.get("cloud_save_path", "")
-
         try:
+            id = video.id
+            link = video.source_link
+            if video.info == "":
+                info = json.loads(video.info)
+                cloud_save_path = info.get("cloud_save_path", "")
+            else:
+                cloud_save_path = ""
+
             run_count += 1
             logger.info(f"Pipeline > pid {pid} processing {id} -- {link}, 轮数 {download_round} | 处理数 {run_count}")
             time_1 = time()
@@ -193,7 +196,7 @@ def main_pipeline(pid):
             # 失败过多直接退出
             if continue_fail_count > LIMIT_FAIL_COUNT:
                 logger.error(f"Pipeline > pid {pid} unexpectable exit beceuse of too much fail count: {continue_fail_count}")
-                exit()
+                return
             # 暂不支持自动切换号
             break
             # 换号
@@ -235,7 +238,7 @@ def main_pipeline(pid):
                 alarm_lark_text(webhook=getenv("LARK_ERROR_WEBHOOK"), text=notice_text)
                 if getenv("CRAWLER_SWITCH_ACCOUNT_ON", False) == "True":
                     ac.logout(is_invalid=True, comment=f"{SERVER_NAME}失败过多退出, {e}") # 退出登陆
-                exit()
+                return
             youtube_sleep(is_succ=False, run_count=run_count, download_round=download_round)
             continue
         else:
@@ -257,7 +260,7 @@ def main_pipeline(pid):
 
 
 from handler.youtube_accout import YoutubeAccout, OAUTH2_PATH
-def handler_switch_account(ac:YoutubeAccout):
+def handler_switch_account()->YoutubeAccout:
         """
         账号轮询登陆直至成功
 
@@ -266,6 +269,7 @@ def handler_switch_account(ac:YoutubeAccout):
         """
         while 1:
             try:
+                ac = YoutubeAccout()
                 ac.youtube_login_handler() # 需要登陆成功才能继续处理
             except Exception as e:
                 logger.error(f"Pipeline > 初始化账号出错, 等待30s重试, traceback: {format_exc()}")
@@ -274,14 +278,15 @@ def handler_switch_account(ac:YoutubeAccout):
             else:
                 logger.info(f"Pipeline > 初始化账号成功，{ac.id} | {ac.username}")
                 break
+        return ac
 
 if __name__ == "__main__":
     # 初始化账号
+    ac = YoutubeAccout()
     if OAUTH2_PATH == "":
         if getenv("CRAWLER_SWITCH_ACCOUNT_ON", False) == "True":
-            ac = YoutubeAccout()
             logger.info("Pipeline > 账号为空，准备初始化账号")
-            handler_switch_account(ac)
+            ac = handler_switch_account()
         else:
             logger.warning("Pipeline > [!] 当前OAuth2账号为空")
 
@@ -289,13 +294,14 @@ if __name__ == "__main__":
     clean_path(DOWNLOAD_PATH)
 
     import multiprocessing
-    from sys import exit
     # PROCESS_NUM = 1 #同时处理的进程数量
     PROCESS_NUM = getenv("PROCESS_NUM")
     PROCESS_NUM = int(PROCESS_NUM)
 
     with multiprocessing.Pool(PROCESS_NUM) as pool:
-        pool.map(main_pipeline, range(PROCESS_NUM))
-    exit(0)
-
+        pool.map(main_pipeline, range(PROCESS_NUM), ac)
+        pool.close()
+        pool.join()
+        # pool.terminate()
+    
     # main_pipeline(0)
