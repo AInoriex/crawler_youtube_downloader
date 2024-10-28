@@ -42,7 +42,7 @@ class YoutubeAccout:
         self.token = "" # 当前token值
         self.yt_dlp_oauth2_path = OAUTH2_PATH # yt-dlp OAUTH2_PATH 路径
         self.yt_dlp_token_path = "" # token_data.json 存放路径
-        self.is_process:bool = False # 是否在处理换号
+        # self.is_process:bool = False # 是否在处理换号
 
     def __del__(self):
         # self.logout(is_invalid=False, comment="账号登出")
@@ -79,8 +79,8 @@ class YoutubeAccout:
             # "token": self.token
         }
 
-    def is_process(self):
-        return self.is_process
+    # def is_process(self):
+    #     return self.is_process
 
     def get_new_account(self):
         '''
@@ -225,18 +225,14 @@ class YoutubeAccout:
         :param save_dir: str, 保存目录
         :return: str, 保存成功的文件路径
         """
-        try:
-            # 判断路径存在，不存在创建
-            if not path.exists(save_dir):
-                makedirs(save_dir)
-            token_path = path.join(save_dir, "token_data.json")
-            with open(token_path, mode="w", encoding="utf8") as f:
-                json.dump(token, f)
-        except Exception as e:
-            print(f"youtube_account > save_token_to_file failed", e)
-        else:
-            print(f"youtube_account > save_token_to_file succeed, {token_path}")
-            return token_path
+        # 判断路径存在，不存在创建
+        if not path.exists(save_dir):
+            makedirs(save_dir)
+        token_path = path.join(save_dir, "token_data.json")
+        with open(token_path, mode="w", encoding="utf8") as f:
+            json.dump(token, f)
+        print(f"youtube_account > save_token_to_file succeed, {token_path}")
+        return token_path
 
     def update_oauth2(self, token_path:str):
         """
@@ -278,7 +274,7 @@ class YoutubeAccout:
         :return: 
         """
         try:
-            self.is_process = True
+            # self.is_process = True
             # 1. 获取可用账号
             self.get_new_account()
             if self.id <= 0 or self.username == "" or self.password == "" or self.verify_email == "":
@@ -338,7 +334,8 @@ class YoutubeAccout:
                 \n\t告警时间: {get_now_time_string()}"
             alarm_lark_text(webhook=getenv("LARK_ERROR_WEBHOOK"), text=notice_text)
         finally:
-            self.is_process = False
+            # self.is_process = False
+            pass
 
     def get_token_from_file(self, token_path:str)->dict:
         """
