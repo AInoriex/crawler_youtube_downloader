@@ -23,9 +23,9 @@ def alarm_lark_text(webhook:str, text:str, retry:int=3)->bool:
         assert resp.status_code == 200
         assert resp.json()["code"] == 0
     except Exception as e:
-        print(f"Lark > [!] 发送飞书失败: {e}")
-        sleep(1)
+        print(f"Lark > [!] 发送飞书失败: {resp.content}, error: {e}")
         if retry > 0:
+            sleep(1)
             return alarm_lark_text(webhook=webhook, text=text, retry=retry-1)
         else:
             return False
