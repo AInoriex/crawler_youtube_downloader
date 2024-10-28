@@ -234,9 +234,14 @@ def download_by_watch_url(v:Video, save_path:str, retry=int(getenv("YTB_MAX_RETR
     except Exception as e:
         print("Yt-dlp > [!] download_by_watch_url 处理失败", traceback.format_exception)
         if retry > 0:
-            if 'msg' in e.__dict__ and "Video unavailable" in e.msg: # 账号不可使用
-                print(f"Yt-dlp > [!] 账号可能无法使用，请换号重试")
-                raise BrokenPipeError("账号失效，请换号重试")
+            # 账号失效1: Video unavailable
+            if 'msg' in e.__dict__ and "Video unavailable" in e.msg: 
+                print(f"Yt-dlp > [!] 账号可能无法使用，请换号重试, {e.msg}")
+                raise BrokenPipeError(f"账号失效, {e.msg}")
+            # 账号失效2: Sign in to confirm you’re not a bot. This helps protect our community. Learn more
+            elif 'msg' in e.__dict__ and "Sign in" in e.msg:
+                print(f"Yt-dlp > [!] 账号可能无法使用，请换号重试, {e.msg}")
+                raise BrokenPipeError(f"账号失效, {e.msg}")
             random_sleep(rand_st=1, rand_range=4)
             return download_by_watch_url(v, save_path, retry=retry-1)
         else:
