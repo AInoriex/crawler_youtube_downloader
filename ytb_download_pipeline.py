@@ -9,6 +9,7 @@ from urllib.parse import urljoin
 from traceback import format_exc
 from handler.youtube import is_touch_fish_time, download_by_watch_url, get_cloud_save_path_by_language
 from handler.yt_dlp import clean_path
+from handler.youtube_accout import YoutubeAccout, OAUTH2_PATH
 # from handler.bilibili import download as bilibili_download
 # from handler.ximalaya import download as ximalaya_download
 from database.youtube_api import get_video_for_download, update_video_record
@@ -231,7 +232,7 @@ def main_pipeline(pid, ac:YoutubeAccout):
                 \n\tERROR: {format_exc()} \
                 \n\t告警时间: {get_now_time_string()}"
             logger.error(notice_text)
-            alarm_lark_text(webhook=getenv("LARK_NOTICE_WEBHOOK"), text=notice_text)
+            alarm_lark_text(webhook=getenv("LARK_ERROR_WEBHOOK"), text=notice_text)
             # 失败过多直接退出
             if continue_fail_count > LIMIT_FAIL_COUNT:
                 logger.error(f"Pipeline > pid {pid} unexpectable exit beceuse of too much fail count: {continue_fail_count}")
@@ -258,8 +259,6 @@ def main_pipeline(pid, ac:YoutubeAccout):
         finally:
             download_round = run_count//LIMIT_LAST_COUNT + 1
 
-
-from handler.youtube_accout import YoutubeAccout, OAUTH2_PATH
 def handler_switch_account()->YoutubeAccout:
         """
         账号轮询登陆直至成功
