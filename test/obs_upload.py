@@ -30,7 +30,7 @@ try:
     # headers.contentType = 'text/plain'
     bucketName = os.getenv("OBS_BUCKET")
     # 对象名，即上传后的文件名
-    objectKey = "QUWAN_DATA/Vietnam/debug/test.txt"
+    objectKey = "/data/test.txt"
     # 待上传文件/文件夹的完整路径，如aa/bb.txt，或aa/
     file_path = 'download/test.txt'
     # 上传文件的自定义元数据
