@@ -9,7 +9,7 @@ from urllib.parse import urljoin
 from traceback import format_exc
 from handler.youtube import is_touch_fish_time, download_by_watch_url, get_cloud_save_path_by_language
 from handler.yt_dlp import clean_path
-from handler.youtube_accout import YoutubeAccout, OAUTH2_PATH
+from handler.youtube_accout import YoutubeAccout
 # from handler.bilibili import download as bilibili_download
 # from handler.ximalaya import download as ximalaya_download
 from database.youtube_api import get_video_for_download, update_video_record
@@ -23,7 +23,7 @@ from utils.ip import get_local_ip, get_public_ip
 # ---- 初始化参数 -----
 # ---------------------
 
-logger = logger.init_logger("main_download")
+logger = logger.init_logger("main")
 local_ip = get_local_ip()
 
 SERVER_NAME = getenv("SERVER_NAME")
@@ -44,6 +44,9 @@ elif CLOUD_TYPE == "cos":
 else:
     raise NotImplementedError
 DOWNLOAD_PATH = getenv('DOWNLOAD_PATH')
+OAUTH2_PATH = getenv("YTB_OAUTH2_PATH") if getenv("YTB_OAUTH2_PATH") else ""
+''' YouTube账号缓存目录'''
+logger.info(f"youtube_account > 初始化账号cache路径：{OAUTH2_PATH}")
 
 # ---------------------------------------------------------------
 
@@ -80,8 +83,8 @@ def youtube_sleep(is_succ:bool, run_count:int, download_round:int):
             random_sleep(rand_st=10, rand_range=20)
 
 def main_pipeline(pid, ac:YoutubeAccout):
-    sleep(60 * pid)
-    logger.debug(f"Pipeline > pid {pid} started")
+    logger.debug(f"Pipeline > pid {pid} started, 当前账号: {ac.get_account_info()}")
+    sleep(15 * pid)
     download_round = int(1)      # 当前下载轮数
     run_count = int(0)           # 持续处理的任务个数
     continue_fail_count = int(0) # 连续失败的任务个数
@@ -260,24 +263,24 @@ def main_pipeline(pid, ac:YoutubeAccout):
             download_round = run_count//LIMIT_LAST_COUNT + 1
 
 def handler_switch_account()->YoutubeAccout:
-        """
-        账号轮询登陆直至成功
+    """
+    账号轮询登陆直至成功
 
-        :param ac: YoutubeAccout, 账号实例
-        :return: None
-        """
-        while 1:
-            try:
-                ac = YoutubeAccout()
-                ac.youtube_login_handler() # 需要登陆成功才能继续处理
-            except Exception as e:
-                logger.error(f"Pipeline > 初始化账号出错, 等待30s重试, traceback: {format_exc()}")
-                sleep(30)
-                continue
-            else:
-                logger.info(f"Pipeline > 初始化账号成功，{ac.id} | {ac.username}")
-                break
-        return ac
+    :param ac: YoutubeAccout, 账号实例
+    :return: None
+    """
+    while 1:
+        try:
+            ac = YoutubeAccout()
+            ac.youtube_login_handler() # 需要登陆成功才能继续处理
+        except Exception as e:
+            logger.error(f"Pipeline > 初始化账号出错, 等待30s重试, traceback: {format_exc()}")
+            sleep(30)
+            continue
+        else:
+            logger.info(f"Pipeline > 初始化账号成功，{ac.id} | {ac.username}")
+            break
+    return ac
 
 if __name__ == "__main__":
     # 初始化账号
@@ -298,7 +301,8 @@ if __name__ == "__main__":
     PROCESS_NUM = int(PROCESS_NUM)
 
     with multiprocessing.Pool(PROCESS_NUM) as pool:
-        pool.map(main_pipeline, range(PROCESS_NUM), ac)
+        for i in range(PROCESS_NUM):
+            pool.apply_async(main_pipeline, (i, ac))
         pool.close()
         pool.join()
         # pool.terminate()
