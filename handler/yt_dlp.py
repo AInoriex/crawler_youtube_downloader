@@ -233,15 +233,8 @@ def download_by_watch_url(v:Video, save_path:str, retry=int(getenv("YTB_MAX_RETR
 
     except Exception as e:
         print("Yt-dlp > [!] download_by_watch_url 处理失败", traceback.format_exception)
+        handle_account_banned_error(e)
         if retry > 0:
-            # 账号失效1: Video unavailable
-            if 'msg' in e.__dict__ and "Video unavailable" in e.msg: 
-                print(f"Yt-dlp > [!] 账号可能无法使用，请换号重试, {e.msg}")
-                raise BrokenPipeError(f"账号失效, {e.msg}")
-            # 账号失效2: Sign in to confirm you’re not a bot. This helps protect our community. Learn more
-            elif 'msg' in e.__dict__ and "Sign in" in e.msg:
-                print(f"Yt-dlp > [!] 账号可能无法使用，请换号重试, {e.msg}")
-                raise BrokenPipeError(f"账号失效, {e.msg}")
             random_sleep(rand_st=1, rand_range=4)
             return download_by_watch_url(v, save_path, retry=retry-1)
         else:
@@ -251,6 +244,30 @@ def download_by_watch_url(v:Video, save_path:str, retry=int(getenv("YTB_MAX_RETR
             raise e
     else:
         return media_filename
+
+def handle_account_banned_error(e:Exception):
+    if 'msg' not in e.__dict__:
+        return
+
+    if "Video unavailable" in e.msg:
+        if "content isn’t available" in e.msg: # 账号失效: Video unavailable. This content isn’t available. 
+            print(f"Yt-dlp > [!] 账号可能无法使用，请换号重试, {e.msg}")
+            raise BrokenPipeError(f"账号可能无法使用，请换号重试, {e.msg}")
+        elif "removed by the uploader" in e.msg: # Video unavailable. This video is removed by the uploader
+            print(f"Yt-dlp > [!] 视频已被上传者删除, {e.msg}")
+            raise FileNotFoundError(f"视频已被上传者删除, {e.msg}")
+        elif "video is private" in e.msg: # Video unavailable. This video is private
+            print(f"Yt-dlp > [!] 私人视频下载失败, {e.msg}")
+            raise FileNotFoundError(f"私人视频下载失败, {e.msg}")
+        else:
+            print(f"Yt-dlp > [!] 视频下载发生未知错误, {e.msg}")
+            raise FileNotFoundError(f"视频下载发生未知错误, {e.msg}")
+
+    # 账号失效: Sign in to confirm you’re not a bot. This helps protect our community. Learn more
+    if "Sign in" in e.msg:
+        print(f"Yt-dlp > [!] 账号可能无法使用，请换号重试, {e.msg}")
+        raise BrokenPipeError(f"账号失效, {e.msg}")
+
 
 def download_by_playlist_url(playlist_url:str, save_path:str, ydl_opts={}, max_limit=0, retry=int(getenv("YTB_MAX_RETRY")), fail_limit=int(getenv("LIMIT_FAIL_COUNT"))):
     ''' 下载油管播放列表playlist到本地 https://www.youtube.com/playlist?list=xxx '''

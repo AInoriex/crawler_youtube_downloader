@@ -187,6 +187,7 @@ def main_pipeline(pid, ac:YoutubeAccout):
                 \n\t下载信息: 轮数 {download_round} | 处理总数 {run_count} | 连续失败数 {continue_fail_count}\
                 \n\t资源ID: {video.id} | {video.vid} \
                 \n\tSource_Link: {video.source_link} \
+                \n\tError: {e.msg} \
                 \n\t共处理了{format_second_to_time_string(int(time_fail-time_1))} \
                 \n\tIP: {local_ip} | {get_public_ip()} \
                 \n\t账号信息: {ac.get_account_info()} \
@@ -227,12 +228,13 @@ def main_pipeline(pid, ac:YoutubeAccout):
                 \n\t下载服务: {SERVER_NAME} | {pid} \
                 \n\t下载信息: 轮数 {download_round} | 处理总数 {run_count} | 连续失败数 {continue_fail_count}\
                 \n\t资源ID: {video.id} | {video.vid} \
-                \n\tSource_Link: {video.source_link} \
-                \n\tCloud_Link: {video.cloud_path} \
+                \n\tSource Link: {video.source_link} \
+                \n\tCloud Link: {video.cloud_path} \
                 \n\t共处理了{format_second_to_time_string(int(time_fail-time_1))} \
                 \n\tIP: {local_ip} | {get_public_ip()} \
-                \n\tERROR: {format_exc()} \
-                \n\t告警时间: {get_now_time_string()}"
+                \n\tError: {e.__class__} | {e} \
+                \n\t告警时间: {get_now_time_string()} \
+                \n\tStack Info: {format_exc()}"
             logger.error(notice_text)
             alarm_lark_text(webhook=getenv("LARK_ERROR_WEBHOOK"), text=notice_text)
             # 失败过多直接退出
