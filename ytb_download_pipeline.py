@@ -187,7 +187,7 @@ def main_pipeline(pid, ac:YoutubeAccout):
                 \n\t下载信息: 轮数 {download_round} | 处理总数 {run_count} | 连续失败数 {continue_fail_count}\
                 \n\t资源ID: {video.id} | {video.vid} \
                 \n\tSource_Link: {video.source_link} \
-                \n\tError: {e.msg} \
+                \n\tError: {e} \
                 \n\t共处理了{format_second_to_time_string(int(time_fail-time_1))} \
                 \n\tIP: {local_ip} | {get_public_ip()} \
                 \n\t账号信息: {ac.get_account_info()} \
@@ -263,7 +263,7 @@ def main_pipeline(pid, ac:YoutubeAccout):
         finally:
             download_round = run_count//LIMIT_LAST_COUNT + 1
 
-def handler_switch_account()->YoutubeAccout:
+def handle_switch_account()->YoutubeAccout:
     """
     账号轮询登陆直至成功
 
@@ -289,7 +289,7 @@ if __name__ == "__main__":
     if OAUTH2_PATH == "":
         if getenv("CRAWLER_SWITCH_ACCOUNT_ON", False) == "True":
             logger.info("Pipeline > 账号为空，准备初始化账号")
-            ac = handler_switch_account()
+            ac = handle_switch_account()
         else:
             logger.warning("Pipeline > [!] 当前OAuth2账号为空")
 

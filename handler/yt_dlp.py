@@ -255,13 +255,13 @@ def handle_account_banned_error(e:Exception):
             raise BrokenPipeError(f"账号可能无法使用，请换号重试, {e.msg}")
         elif "removed by the uploader" in e.msg: # Video unavailable. This video is removed by the uploader
             print(f"Yt-dlp > [!] 视频已被上传者删除, {e.msg}")
-            raise FileNotFoundError(f"视频已被上传者删除, {e.msg}")
+            raise PermissionError(f"视频已被上传者删除, {e.msg}")
         elif "video is private" in e.msg: # Video unavailable. This video is private
             print(f"Yt-dlp > [!] 私人视频下载失败, {e.msg}")
-            raise FileNotFoundError(f"私人视频下载失败, {e.msg}")
+            raise PermissionError(f"私人视频下载失败, {e.msg}")
         else:
             print(f"Yt-dlp > [!] 视频下载发生未知错误, {e.msg}")
-            raise FileNotFoundError(f"视频下载发生未知错误, {e.msg}")
+            raise PermissionError(f"视频下载发生未知错误, {e.msg}")
 
     # 账号失效: Sign in to confirm you’re not a bot. This helps protect our community. Learn more
     if "Sign in" in e.msg:
