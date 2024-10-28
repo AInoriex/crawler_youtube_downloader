@@ -184,8 +184,8 @@ def main_pipeline(pid, ac:YoutubeAccout):
             # 告警
             notice_text = f"[Youtube Crawler | ERROR] 账号失效. \
                 \n\t下载服务: {SERVER_NAME} | {pid} \
-                \n\t下载信息: 轮数 {download_round} | 处理总数 {run_count} | 连续失败数 {continue_fail_count}\
-                \n\t资源ID: {video.id} | {video.vid} \
+                \n\t下载信息: 轮数 {download_round} | 处理总数 {run_count} | 连续失败数 {continue_fail_count} \
+                \n\t资源信息: {video.id} | {video.vid} | {video.language} \
                 \n\tSource_Link: {video.source_link} \
                 \n\tError: {e} \
                 \n\t共处理了{format_second_to_time_string(int(time_fail-time_1))} \
@@ -227,7 +227,7 @@ def main_pipeline(pid, ac:YoutubeAccout):
             notice_text = f"[Youtube Crawler | ERROR] download pipeline failed. \
                 \n\t下载服务: {SERVER_NAME} | {pid} \
                 \n\t下载信息: 轮数 {download_round} | 处理总数 {run_count} | 连续失败数 {continue_fail_count}\
-                \n\t资源ID: {video.id} | {video.vid} \
+                \n\t资源信息: {video.id} | {video.vid} | {video.language} \
                 \n\tSource Link: {video.source_link} \
                 \n\tCloud Link: {video.cloud_path} \
                 \n\t共处理了{format_second_to_time_string(int(time_fail-time_1))} \
@@ -250,8 +250,9 @@ def main_pipeline(pid, ac:YoutubeAccout):
             continue_fail_count = 0
             # 告警
             notice_text = f"[Youtube Crawler | DEBUG] download pipeline succeed. \
-                \n\t下载服务: {SERVER_NAME} | {pid} \
+                \n\t下载服务: {SERVER_NAME} | 进程: {pid} \
                 \n\t下载信息: 轮数 {download_round} | 处理总数 {run_count} | 连续失败数 {continue_fail_count} \
+                \n\t资源信息: {video.id} | {video.vid} | {video.language} \
                 \n\tLink: {video.source_link} -> {video.cloud_path} \
                 \n\t资源共 {file_size:.2f}MB , 共处理了{format_second_to_time_string(spend_total_time)} \
                 \n\t下载时长: {format_second_to_time_string(spend_download_time)} , 上传时长: {format_second_to_time_string(spend_upload_time)} \
