@@ -83,8 +83,8 @@ def youtube_sleep(is_succ:bool, run_count:int, download_round:int):
             random_sleep(rand_st=10, rand_range=20)
 
 def main_pipeline(pid, ac:YoutubeAccout):
-    logger.debug(f"Pipeline > pid {pid} started, 当前账号: {ac.get_account_info()}")
     sleep(15 * pid)
+    logger.debug(f"Pipeline > 进程 {pid} 开始执行, 当前账号: {ac.get_account_info()}")
     download_round = int(1)      # 当前下载轮数
     run_count = int(0)           # 持续处理的任务个数
     continue_fail_count = int(0) # 连续失败的任务个数
@@ -98,24 +98,24 @@ def main_pipeline(pid, ac:YoutubeAccout):
         # video = get_video_for_download(query_id=668925)
 
         if video is None:
-            logger.warning(f"Pipeline > pid {pid} no task which has processed {run_count} tasks, waiting...")
+            logger.warning(f"Pipeline > 进程 {pid} 无任务待处理, 当前轮次: {download_round} | {run_count}, 等待中...")
             random_sleep(rand_st=20, rand_range=10)
             continue
         if video.id <= 0 or video.source_link == "":
-            logger.warning(f"Pipeline > pid {pid} get invalid video, continue...")
+            logger.warning(f"Pipeline > 进程 {pid} 获取无效任务, 跳过处理...")
             random_sleep(rand_st=20, rand_range=10)
             continue
         try:
-            id = video.id
-            link = video.source_link
-            if video.info == "":
+            video_id = video.id
+            video_link = video.source_link
+            if video.info != "":
                 info = json.loads(video.info)
                 cloud_save_path = info.get("cloud_save_path", "")
             else:
                 cloud_save_path = ""
 
             run_count += 1
-            logger.info(f"Pipeline > pid {pid} processing {id} -- {link}, 轮数 {download_round} | 处理数 {run_count}")
+            logger.info(f"Pipeline > 进程 {pid} 处理任务 {video_id} -- {video_link}, 当前轮次: {download_round} | {run_count}")
             time_1 = time()
 
             # 下载(本地存在不会被覆盖，续传)
@@ -131,7 +131,7 @@ def main_pipeline(pid, ac:YoutubeAccout):
                 ), 
                 path.basename(download_path)
             )
-            logger.info(f"Pipeline > pid {pid} processing {id} is ready to upload `{CLOUD_TYPE}`, from: {download_path}, to: {cloud_path}")
+            logger.info(f"Pipeline > 进程 {pid} 处理任务 {video_id} 准备上传 `{CLOUD_TYPE}`, from: {download_path}, to: {cloud_path}")
             if CLOUD_TYPE == "obs":
                 # cloud_path = urljoin(getenv("OBS_SAVEPATH"), path.basename(download_path))
                 # cloud_link = obs_upload_file(
@@ -160,15 +160,14 @@ def main_pipeline(pid, ac:YoutubeAccout):
             spend_total_time = int(time_3 - time_1) #总花费时间
             file_size = get_file_size(download_path)
             logger.info(
-                f"Pipeline > pid {pid} done processing {id}, uploaded to {cloud_path}, \
-                    file_size: {file_size} MB, spend_time: {format_second_to_time_string(spend_total_time)} seconds"
+                f"Pipeline > 进程 {pid} 完成处理任务 {video_id}, 已上传至 {cloud_path}, 文件大小: {file_size} MB, 共处理了 {format_second_to_time_string(spend_total_time)}"
             )
             
             # 移除本地文件
             remove(download_path)
 
         except KeyboardInterrupt:
-            logger.warning(f"Pipeline > pid {pid} interrupted processing {id}, reverting...")
+            logger.warning(f"Pipeline > 进程 {pid} interrupted processing {video_id}, reverting...")
             # 任务回调
             video.lock = 0
             update_video_record(video)
@@ -176,7 +175,7 @@ def main_pipeline(pid, ac:YoutubeAccout):
         except BrokenPipeError as e: # 账号被封处理
             continue_fail_count += 1
             time_fail = time()
-            logger.error(f"Pipeline > pid {pid} error processing {id}")
+            logger.error(f"Pipeline > 进程 {pid} 处理任务 {video_id} 失败, 账号可能失效")
             logger.error(e, stack_info=True)
             # 任务回调
             video.status = -1
@@ -199,7 +198,7 @@ def main_pipeline(pid, ac:YoutubeAccout):
                 ac.logout(is_invalid=True, comment="账号失效") 
             # 失败过多直接退出
             if continue_fail_count > LIMIT_FAIL_COUNT:
-                logger.error(f"Pipeline > pid {pid} unexpectable exit beceuse of too much fail count: {continue_fail_count}")
+                logger.error(f"Pipeline > 进程 {pid} 失败过多超过{continue_fail_count}次, 异常退出")
                 return
             # 暂不支持自动切换号
             break
@@ -217,7 +216,7 @@ def main_pipeline(pid, ac:YoutubeAccout):
         except Exception as e:
             continue_fail_count += 1
             time_fail = time()
-            logger.error(f"Pipeline > pid {pid} error processing {id}")
+            logger.error(f"Pipeline > 进程 {pid} 处理任务 {video_id} 失败, 错误信息:{e}")
             logger.error(e, stack_info=True)
             # 任务回调
             video.status = -1
@@ -238,7 +237,7 @@ def main_pipeline(pid, ac:YoutubeAccout):
             alarm_lark_text(webhook=getenv("LARK_ERROR_WEBHOOK"), text=notice_text)
             # 失败过多直接退出
             if continue_fail_count > LIMIT_FAIL_COUNT:
-                logger.error(f"Pipeline > pid {pid} unexpectable exit beceuse of too much fail count: {continue_fail_count}")
+                logger.error(f"Pipeline > 进程 {pid} 失败过多超过{continue_fail_count}次, 异常退出")
                 alarm_lark_text(webhook=getenv("LARK_ERROR_WEBHOOK"), text=notice_text)
                 if getenv("CRAWLER_SWITCH_ACCOUNT_ON", False) == "True":
                     ac.logout(is_invalid=True, comment=f"{SERVER_NAME}失败过多退出, {e}") # 退出登陆
