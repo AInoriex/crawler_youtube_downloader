@@ -71,9 +71,9 @@ def youtube_sleep(is_succ:bool, run_count:int, download_round:int):
         return
     if is_succ:
         if is_touch_fish_time():
-            random_sleep(rand_st=5, rand_range=5)
+            random_sleep(rand_st=5, rand_range=10)
         else:
-            random_sleep(rand_st=10, rand_range=5)
+            random_sleep(rand_st=10, rand_range=10)
     else:
         if is_touch_fish_time():
             random_sleep(rand_st=5, rand_range=20)
