@@ -13,7 +13,7 @@ from handler.youtube_accout import YoutubeAccout
 # from handler.bilibili import download as bilibili_download
 # from handler.ximalaya import download as ximalaya_download
 from database.youtube_api import get_video_for_download, update_video_record
-from utils import logger
+from utils import logger as ulogger
 from utils.utime import random_sleep, get_now_time_string, format_second_to_time_string
 from utils.file import get_file_size
 from utils.lark import alarm_lark_text
@@ -23,16 +23,13 @@ from utils.ip import get_local_ip, get_public_ip
 # ---- 初始化参数 -----
 # ---------------------
 
-logger = logger.init_logger("main")
 local_ip = get_local_ip()
-
+''' 本地IP '''
 SERVER_NAME = getenv("SERVER_NAME")
-''' 处理失败任务限制数 '''
+''' 服务名称 '''
 LIMIT_FAIL_COUNT = int(getenv("LIMIT_FAIL_COUNT"))
-# LIMIT_FAIL_COUNT = 10
 ''' 处理失败任务限制数 '''
 LIMIT_LAST_COUNT = int(getenv("LIMIT_LAST_COUNT"))
-# LIMIT_LAST_COUNT = 100
 ''' 连续处理任务限制数 '''
 CLOUD_TYPE = "obs" if getenv("OBS_ON", False) == "True" else "cos"
 ''' 云端存储类别，上传cos或者obs '''
@@ -44,9 +41,10 @@ elif CLOUD_TYPE == "cos":
 else:
     raise NotImplementedError
 DOWNLOAD_PATH = getenv('DOWNLOAD_PATH')
+''' YouTube资源下载目录'''
 OAUTH2_PATH = getenv("YTB_OAUTH2_PATH") if getenv("YTB_OAUTH2_PATH") else ""
 ''' YouTube账号缓存目录'''
-logger.info(f"youtube_account > 初始化账号cache路径：{OAUTH2_PATH}")
+print("main > 初始化完毕")
 
 # ---------------------------------------------------------------
 
@@ -68,7 +66,7 @@ def youtube_sleep(is_succ:bool, run_count:int, download_round:int):
     """
     now_round = run_count//LIMIT_LAST_COUNT + 1
     if now_round > download_round:
-        logger.info(f"Pipeline > 触发轮数限制, 当前轮数：{now_round}")
+        print(f"Pipeline > 触发轮数限制, 当前轮数：{now_round}")
         random_sleep(rand_st=60, rand_range=30)
         return
     if is_succ:
@@ -83,6 +81,8 @@ def youtube_sleep(is_succ:bool, run_count:int, download_round:int):
             random_sleep(rand_st=10, rand_range=20)
 
 def main_pipeline(pid, ac:YoutubeAccout):
+    logger = ulogger.init_logger("main_pipeline")
+    logger.info(f"youtube_account > 初始化账号cache路径：{OAUTH2_PATH}")
     sleep(15 * pid)
     logger.debug(f"Pipeline > 进程 {pid} 开始执行, 当前账号: {ac.get_account_info()}")
     download_round = int(1)      # 当前下载轮数
@@ -171,7 +171,9 @@ def main_pipeline(pid, ac:YoutubeAccout):
             # 任务回调
             video.lock = 0
             update_video_record(video)
-            break
+            # return
+            # break
+            raise KeyboardInterrupt
         except BrokenPipeError as e: # 账号被封处理
             continue_fail_count += 1
             time_fail = time()
@@ -201,6 +203,7 @@ def main_pipeline(pid, ac:YoutubeAccout):
             if continue_fail_count > LIMIT_FAIL_COUNT:
                 logger.error(f"Pipeline > 进程 {pid} 失败过多超过{continue_fail_count}次, 异常退出")
                 return
+            
             # 暂不支持自动切换号
             break
             # 换号
@@ -271,6 +274,7 @@ def handle_switch_account()->YoutubeAccout:
     :param ac: YoutubeAccout, 账号实例
     :return: None
     """
+    logger = ulogger.init_logger("handle_switch_account")
     while 1:
         try:
             ac = YoutubeAccout()
@@ -284,15 +288,165 @@ def handle_switch_account()->YoutubeAccout:
             break
     return ac
 
+def main_pipeline_v2(pid):
+    from handler import tubedown
+    logger = ulogger.init_logger("main_pipeline_v2")
+    sleep(15 * pid)
+    logger.debug(f"Pipeline > 进程 {pid} 开始执行")
+    download_round = int(1)      # 当前下载轮数
+    run_count = int(0)           # 持续处理的任务个数
+    continue_fail_count = int(0) # 连续失败的任务个数
+
+    while True:
+        video = get_video_for_download(
+            query_id=0, 
+            query_source_type=int(getenv("DOWNLOAD_SOURCE_TYPE")),
+            query_language=getenv("DOWNLOAD_LANGUAGE"),
+        )
+        # video = get_video_for_download(query_id=2636911)
+
+        if video is None:
+            logger.warning(f"Pipeline > 进程 {pid} 无任务待处理, 当前轮次: {download_round} | {run_count}, 等待中...")
+            random_sleep(rand_st=20, rand_range=10)
+            continue
+        if video.id <= 0 or video.source_link == "":
+            logger.warning(f"Pipeline > 进程 {pid} 获取无效任务, 跳过处理...")
+            random_sleep(rand_st=20, rand_range=10)
+            continue
+
+        try:
+            video_id = video.id
+            video_link = video.source_link
+            if video.info != "":
+                info = json.loads(video.info)
+                cloud_save_path = info.get("cloud_save_path", "")
+            else:
+                cloud_save_path = ""
+            
+            run_count += 1
+            logger.info(f"Pipeline > 进程 {pid} 处理任务 {video_id} -- {video_link}, 当前轮次: {download_round} | {run_count}")
+            time_1 = time()
+
+            # 解析
+            # video_link = 'https://www.youtube.com/watch?v=6gk91dpHNo8'
+            down_info = tubedown.extract_download_url(video_link)
+            video_url = down_info.get("video_info", {}).get("url")
+            audio_url = down_info.get("audio_info", {}).get("url")
+            logger.info(f"视频下载地址：{video_url}")
+            logger.info(f"音频下载地址：{audio_url}")
+
+            # 下载
+            filename = path.join(DOWNLOAD_PATH, f"{tubedown.get_youtube_vid(video_link)}.{tubedown.get_mime_type(video_url, default='mp4')}")
+            download_path = tubedown.download_url_resource_local(video_url, filename)
+            time_2 = time()
+            spend_download_time = max(time_2 - time_1, 0.01) #下载花费时间
+            if download_path == "":
+                raise("download_path 为空")
+
+            # 上传云端
+            cloud_path = urljoin(
+                get_cloud_save_path_by_language(
+                    save_path=cloud_save_path if cloud_save_path !='' else getenv("CLOUD_SAVE_PATH"),
+                    lang_key=video.language
+                ), 
+                path.basename(download_path)
+            )
+            logger.info(f"Pipeline > 进程 {pid} 处理任务 {video_id} 准备上传 `{CLOUD_TYPE}`, from: {download_path}, to: {cloud_path}")
+            if CLOUD_TYPE == "obs":
+                # cloud_path = urljoin(getenv("OBS_SAVEPATH"), path.basename(download_path))
+                # cloud_link = obs_upload_file(
+                #     from_path=download_path, to_path=cloud_path
+                # )
+                cloud_link = obs_upload_file_v2(
+                    from_path=download_path, to_path=cloud_path
+                )
+            elif CLOUD_TYPE == "cos":
+                # cloud_path = urljoin(getenv("COS_SAVEPATH"), path.basename(download_path))
+                cloud_link = cos_upload_file(
+                    from_path=download_path, to_path=cloud_path
+                )
+            else:
+                raise ValueError("invalid cloud type")
+            time_3 = time()
+            spend_upload_time = max(time_3 - time_2, 0.01) #上传花费时间
+            
+            # 更新数据库
+            video.status = 2 # upload done
+            video.cloud_type = 2 if CLOUD_TYPE == "obs" else 1 # 1:cos 2:obs
+            video.cloud_path = cloud_link
+            update_video_record(video)
+            
+            # 日志记录
+            spend_total_time = int(time_3 - time_1) #总花费时间
+            file_size = get_file_size(download_path)
+            logger.info(
+                f"Pipeline > 进程 {pid} 完成处理任务 {video_id}, 已上传至 {cloud_path}, 文件大小: {file_size} MB, 共处理了 {format_second_to_time_string(spend_total_time)}"
+            )
+            
+            # 移除本地文件
+            remove(download_path)
+        except KeyboardInterrupt:
+            logger.warning(f"Pipeline > 进程 {pid} interrupted processing {video_id}, reverting...")
+            # 任务回调
+            video.lock = 0
+            update_video_record(video)
+            raise KeyboardInterrupt
+        except Exception as e:
+            continue_fail_count += 1
+            time_fail = time()
+            logger.error(f"Pipeline > 进程 {pid} 处理任务 {video_id} 失败, 错误信息:{e}")
+            logger.error(e, stack_info=True)
+            # 任务回调
+            video.status = -1
+            video.lock = 0
+            update_video_record(video)
+            # 告警
+            notice_text = f"[Youtube Crawler | ERROR] download pipeline failed. \
+                \n\t下载服务: {SERVER_NAME} | {pid} \
+                \n\t下载信息: 轮数 {download_round} | 处理总数 {run_count} | 连续失败数 {continue_fail_count}\
+                \n\t资源信息: {video.id} | {video.vid} | {video.language} \
+                \n\tSource Link: {video.source_link} \
+                \n\tCloud Link: {video.cloud_path} \
+                \n\t共处理了{format_second_to_time_string(int(time_fail-time_1))} \
+                \n\tIP: {local_ip} | {get_public_ip()} \
+                \n\tError: {e.__class__} | {e} \
+                \n\t告警时间: {get_now_time_string()} \
+                \n\tStack Info: {format_exc()}"
+            logger.error(notice_text)
+            alarm_lark_text(webhook=getenv("LARK_ERROR_WEBHOOK"), text=notice_text)
+            # 失败过多直接退出
+            if continue_fail_count > LIMIT_FAIL_COUNT:
+                logger.error(f"Pipeline > 进程 {pid} 失败过多超过{continue_fail_count}次, 异常退出")
+                alarm_lark_text(webhook=getenv("LARK_ERROR_WEBHOOK"), text=notice_text)
+            youtube_sleep(is_succ=False, run_count=run_count, download_round=download_round)
+            continue
+        else:
+            continue_fail_count = 0
+            # 告警
+            notice_text = f"[Youtube Crawler | DEBUG] download pipeline succeed. \
+                \n\t下载服务: {SERVER_NAME} | 进程: {pid} \
+                \n\t下载信息: 轮数 {download_round} | 处理总数 {run_count} | 连续失败数 {continue_fail_count} \
+                \n\t资源信息: {video.id} | {video.vid} | {video.language} \
+                \n\tLink: {video.source_link} -> {video.cloud_path} \
+                \n\t资源共 {file_size:.2f}MB , 共处理了{format_second_to_time_string(spend_total_time)} \
+                \n\t下载时长: {format_second_to_time_string(spend_download_time)} , 上传时长: {format_second_to_time_string(spend_upload_time)} \
+                \n\t下载均速: {file_size/spend_download_time:.2f}M/s , 上传均速: {file_size/spend_upload_time:.2f}M/s \
+                \n\tIP: {local_ip} | {get_public_ip()}"
+            logger.info(notice_text)
+            alarm_lark_text(webhook=getenv("LARK_NOTICE_WEBHOOK"), text=notice_text)
+            youtube_sleep(is_succ=True, run_count=run_count, download_round=download_round)
+        finally:
+            download_round = run_count//LIMIT_LAST_COUNT + 1
+
 if __name__ == "__main__":
     # 初始化账号
     ac = YoutubeAccout()
     if OAUTH2_PATH == "":
         if getenv("CRAWLER_SWITCH_ACCOUNT_ON", False) == "True":
-            logger.info("Pipeline > 账号为空，准备初始化账号")
+            print("main > 账号为空，准备初始化账号")
             ac = handle_switch_account()
         else:
-            logger.warning("Pipeline > [!] 当前OAuth2账号为空")
+            print("main > [!] 当前OAuth2账号为空")
 
     # 清理旧目录文件
     clean_path(DOWNLOAD_PATH)
@@ -302,11 +456,16 @@ if __name__ == "__main__":
     PROCESS_NUM = getenv("PROCESS_NUM")
     PROCESS_NUM = int(PROCESS_NUM)
 
-    with multiprocessing.Pool(PROCESS_NUM) as pool:
-        for i in range(PROCESS_NUM):
-            pool.apply_async(main_pipeline, (i, ac))
-        pool.close()
-        pool.join()
-        # pool.terminate()
+    try:
+        with multiprocessing.Pool(PROCESS_NUM) as pool:
+            for i in range(PROCESS_NUM):
+                pool.apply_async(main_pipeline, (i, ac))
+            pool.close()
+            pool.join()
+            # pool.terminate()
+        # main_pipeline(0)
+    except Exception as e:
+        print(f"main > Exception raise: {e.__class__} | {e}")
+        pool.terminate()
     
-    # main_pipeline(0)
+    # main_pipeline_v2(0)
