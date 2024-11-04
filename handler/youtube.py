@@ -124,10 +124,11 @@ def get_cloud_save_path_by_language(save_path:str, lang_key:str)->str:
         "vi": "Vietnam",		# 越南语
         "yue": "Yueyu",			# 粤语
         "zh": "Zhongwen",		# 中文
-        "unknown": "Unclassify" # 未知
+        "test": f"Unclassify/test",             # 测试数据
+        "unknown": f"Unclassify/{lang_key}",    # 其他
     }
     if "{LANGUAGE}" in save_path:
-        ret_path = save_path.format(LANGUAGE=LANGUAGE_PATH_DICT.get(lang_key.lower(), "Unclassify"))
+        ret_path = save_path.format(LANGUAGE=LANGUAGE_PATH_DICT.get(lang_key.lower(), f"Unclassify/{lang_key}"))
     else:
         ret_path = save_path
     return ret_path
