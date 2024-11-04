@@ -48,7 +48,7 @@ def get_video_for_download(query_id=0, query_source_type=int(getenv("DOWNLOAD_SO
             info=resp_data.get("info", ""),
         )
     except Exception as e:
-        print(f"get_video_for_download > get video failed, req:{params}, resp:{resp_json}, Error: {e}")
+        print(f"get_video_for_download > get video failed, req:{params}, resp:{resp.status_code}|{str(resp.content, encoding='utf-8')}, Error: {e}")
         # raise Exception(f"get_video_for_download failed, req:{params}, resp:{resp_json}")
         return None
     else:
@@ -76,7 +76,7 @@ def update_video_record(video:Video):
     # print("update_video_record > Update Response | status_code:%d, content:%s"%(resp_json["code"], resp_json["msg"]))
     resp_code = resp_json["code"]
     if resp_code != 0:
-        raise Exception(f"update_video_record failed, req:{reqbody}, resp:{resp_json}")
+        raise Exception(f"update_video_record failed, req:{reqbody}, resp:{resp.status_code}|{str(resp.content, encoding='utf-8')}")
     else:
         print(f"update_video_record > update succeed, req:{reqbody}")
 
