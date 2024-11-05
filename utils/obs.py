@@ -38,7 +38,7 @@ def callback(transferredAmount, totalAmount, totalSeconds):
     # 保留一半控制台输出
     if int(trans_percent) % 10 == 0:
         return
-    print(f"Obs > upload_file callback {trans_speed:.2f}KB/s | {trans_percent:.2f}%")
+    print(f"\rObs > upload_file callback {trans_speed:.2f}KB/s | {trans_percent:.2f}%", end='')
 
 # 上传
 def upload_file(from_path:str, to_path:str)->str:

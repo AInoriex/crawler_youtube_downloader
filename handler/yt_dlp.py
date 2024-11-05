@@ -259,7 +259,7 @@ def handle_account_banned_error(e:Exception):
         elif "video is private" in e.msg: # Video unavailable. This video is private
             print(f"Yt-dlp > [!] 私人视频下载失败, {e.msg}")
             raise PermissionError(f"私人视频下载失败, {e.msg}")
-        else:
+        else: # Video unavailable. This video is not available
             print(f"Yt-dlp > [!] 视频下载发生未知错误, {e.msg}")
             raise PermissionError(f"视频下载发生未知错误, {e.msg}")
 
