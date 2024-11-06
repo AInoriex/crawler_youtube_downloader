@@ -98,14 +98,14 @@ def extract_download_url(youtube_url, retry=3):
         return {"video_info": video_info, "audio_info": audio_info}
 
 
-def get_url_resource(url:str, filename:str, _chunk_size=3*1024)->str:
+def get_url_resource(url:str, filename:str, _chunk_size=3*1024, retry=10)->str:
     ''' 下载url资源到本地 '''
     ua = get_random_ua()
     # if os.path.exists(filename):
     #     print(f"[Warn] 该路径下{filename}文件存在，下载跳过")
     #     return True
     # makedirs(save_path, exist_ok=True) 
-    logger.info(f"get_url_resource_to_local > params {url} → {filename}")
+    logger.info(f"get_url_resource > params {url} → {filename}")
     headers = {
         'accept': 'application/json',
         'accept-language': 'zh-CN,zh;q=0.9,en-GB;q=0.8,en;q=0.7,en-US;q=0.6',
@@ -126,7 +126,7 @@ def get_url_resource(url:str, filename:str, _chunk_size=3*1024)->str:
     try:
         resp = requests.get(url, headers=headers, proxies=proxies, timeout=(5, 20), verify=True, stream=True)
         if not resp.status_code == 200:
-            raise ConnectionError(f"get_url_resource_to_local get {url} failed, {resp.status_code} | {str(resp.content, encoding='utf-8')}")
+            raise ConnectionError(f"get_url_resource get {url} failed, {resp.status_code} | {str(resp.content, encoding='utf-8')}")
 
         file_size = int(resp.headers.get('content-length', 0))
         downloaded = 0
@@ -137,10 +137,15 @@ def get_url_resource(url:str, filename:str, _chunk_size=3*1024)->str:
                 done = int(50 * downloaded / file_size)
                 print(f"\r[{'=' * done}{' ' * (50-done)}] {done * 2}%", end='')
     except Exception as e:
-        print(f"get_url_resource_to_local > error: {e}")
-        raise e
+        logger.error(f"get_url_resource > error: {e}")
+        if retry > 0:
+            print(f"get_url_resource > retry {retry} times on {filename} ")
+            sleep(randint(2,5))
+            get_url_resource(url=url, filename=filename, retry=retry-1)
+        else:
+            raise e
     else:
-        logger.info(f"\nget_url_resource_to_local > download {filename} succeed.")
+        logger.info(f"\nget_url_resource > download {filename} succeed.")
         return filename
 
 
