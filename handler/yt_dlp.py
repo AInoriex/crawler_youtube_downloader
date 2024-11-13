@@ -3,6 +3,8 @@ from os import path, makedirs, getenv, removedirs
 from shutil import rmtree
 from handler.info import dump_info
 from yt_dlp import YoutubeDL
+from yt_dlp.networking import exceptions
+from yt_dlp.utils import *
 from database.youtube_api import Video
 from utils.utime import random_sleep
 
@@ -230,7 +232,12 @@ def download_by_watch_url(v:Video, save_path:str, retry=int(getenv("YTB_MAX_RETR
             #     subtitle_filename = path.join(ydl_opts["save_media_path"], f"{__vid}.srt")
             #     ydl.process_subtitles(__vid, subtitle_filename)
             #     print(f"Yt-dlp > download_by_watch_url 字幕下载完成: {subtitle_filename}")
-
+    except exceptions.HTTPError as e:
+        print("Yt-dlp > [!] download_by_watch_url 接口请求失败", e.status, e.reason)
+        raise e
+    except ExtractorError as e:
+        print("Yt-dlp > [!] download_by_watch_url 解析失败", e.msg)
+        raise e
     except Exception as e:
         print("Yt-dlp > [!] download_by_watch_url 处理失败", traceback.format_exception)
         handle_account_banned_error(e)
