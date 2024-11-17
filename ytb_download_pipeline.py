@@ -88,7 +88,7 @@ def download_with_yt_dlp(video, save_path):
     return download_path
 
 def download_with_tubedown(video, save_path):
-    from handler.tubedown import extract_download_url, get_url_resource
+    from handler.tubedown import extract_download_url, get_url_resource, get_url_resource_v2
     from handler.tubedown import get_youtube_vid, get_mime_type
     # 解析
     down_info = extract_download_url(video.source_link)
@@ -99,7 +99,8 @@ def download_with_tubedown(video, save_path):
 
     # 下载
     filename = path.join(save_path, f"{get_youtube_vid(video.source_link)}.{get_mime_type(dst_url, default='mp4')}")
-    download_path = get_url_resource(dst_url, filename)
+    # download_path = get_url_resource(dst_url, filename)
+    download_path = get_url_resource_v2(dst_url, filename)
     if download_path == "":
         raise("download_with_tubedown download_path empty")
     return download_path
@@ -268,7 +269,7 @@ def main_pipeline(pid, ac:YoutubeAccout):
                 \n\t告警时间: {get_now_time_string()} \
                 \n\tStack Info: {format_exc()}"
             logger.error(notice_text)
-            alarm_lark_text(webhook=getenv("LARK_ERROR_WEBHOOK"), text=notice_text)
+            alarm_lark_text(webhook=getenv("LARK_NOTICE_WEBHOOK"), text=notice_text)
             # 失败过多直接退出
             if continue_fail_count > LIMIT_FAIL_COUNT:
                 logger.error(f"Pipeline > 进程 {pid} 失败过多超过{continue_fail_count}次, 异常退出")

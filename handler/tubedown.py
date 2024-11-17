@@ -1,6 +1,6 @@
 # https://tubedown.cn/youtube
 from time import sleep, time
-from os import getenv, makedirs, path
+from os import getenv
 from loguru import logger
 import requests
 from random import choice, randint
@@ -97,7 +97,6 @@ def extract_download_url(youtube_url, retry=3):
     else:
         return {"video_info": video_info, "audio_info": audio_info}
 
-
 def get_url_resource(url:str, filename:str, _chunk_size=3*1024, retry=10)->str:
     ''' 下载url资源到本地 '''
     ua = get_random_ua()
@@ -107,10 +106,8 @@ def get_url_resource(url:str, filename:str, _chunk_size=3*1024, retry=10)->str:
     # makedirs(save_path, exist_ok=True) 
     logger.info(f"get_url_resource > params {url} → {filename}")
     headers = {
-        'accept': 'application/json',
         'accept-language': 'zh-CN,zh;q=0.9,en-GB;q=0.8,en;q=0.7,en-US;q=0.6',
         'cache-control': 'no-cache',
-        'content-type': 'application/json',
         'sec-ch-ua': '"Microsoft Edge";v="129", "Not=A?Brand";v="8", "Chromium";v="129"',
         'sec-ch-ua-mobile': '?0',
         'sec-fetch-dest': 'empty',
@@ -148,6 +145,58 @@ def get_url_resource(url:str, filename:str, _chunk_size=3*1024, retry=10)->str:
         logger.info(f"\nget_url_resource > download {filename} succeed.")
         return filename
 
+def get_url_resource_v2(url:str, filename:str):
+    """
+    使用代理服务器从url处下载文件到本地的filename
+
+    :param url: 要下载的文件的url
+    :param filename: 保存到本地的文件名
+    :return: None
+    """
+    import urllib.request as request
+    print(f"download_file > 参数：{url} -- {filename}")
+    ua = get_random_ua()
+    headers = [
+        ('accept-language','zh-CN,zh;q=0.9,en-GB;q=0.8,en;q=0.7,en-US;q=0.6'),
+        ('cache-control','no-cache'),
+        ('sec-ch-ua','"Microsoft Edge";v="129", "Not=A?Brand";v="8", "Chromium";v="129"'),
+        ('sec-ch-ua-mobile','?0'),
+        ('sec-fetch-dest','empty'),
+        ('sec-fetch-mode','cors'),
+        ('sec-fetch-site','same-origin'),
+        ('sec-ch-ua-platform',ua.get('os')),
+        ('user-agent',ua.get('ua')),
+    ]
+    proxies={
+        'http': getenv("HTTP_PROXY") if getenv("HTTP_PROXY") != "" else "",
+        'https': getenv("HTTP_PROXY") if getenv("HTTP_PROXY") != "" else "",
+    }
+
+    def reporthook(block_num, block_size, total_size):
+        if block_num // 2 == 0:
+            return
+        if total_size != -1:
+            print(f"\r文件大小：{total_size/1048576:.2f}MB | 下载进度：{block_num*block_size/total_size*100:.2f}%", end='')
+        
+    try:
+        # create the object, assign it to a variable
+        proxy_handler = request.ProxyHandler(proxies)
+        # proxy_handler = request.ProxyHandler()
+
+        # construct a new opener using your proxy settings
+        opener = request.build_opener(proxy_handler)
+        opener.addheaders = headers
+
+        # install the openen on the module-level
+        request.install_opener(opener)
+
+        request.urlretrieve(url, filename, reporthook)
+    except Exception as e:
+        print(f"\ndownload_file > 下载文件时发生错误：{e}")
+        raise e
+    else:
+        print(f"\ndownload_file > 文件已下载到：{filename}")
+        return filename
 
 def get_youtube_vid(url:str):
     import re
@@ -165,7 +214,6 @@ def get_youtube_vid(url:str):
         logger.error(f"get_youtube_vid > error, {e}")
         return default
     
-
 def get_mime_type(url, default="mp4"):
     import re
     try:
@@ -194,4 +242,5 @@ if __name__ == '__main__':
         logger.info(f"用时：{round(time()-st, 2)} seconds")
 
     # video_url = """https://rr5---sn-i3belnl6.googlevideo.com/videoplayback?expire=1730743103&ei=37YoZ-7pE6mL1d8PpuSSoAg&ip=206.237.16.169&id=o-AMqSU8CgVxIH7TiXp-ejgwYjc5egEGRri94MHuP6JL5a&itag=137&source=youtube&requiressl=yes&xpc=EgVo2aDSNQ%3D%3D&met=1730721503%2C&mh=J1&mm=31%2C29&mn=sn-i3belnl6%2Csn-i3b7knlk&ms=au%2Crdu&mv=u&mvi=5&pl=23&rms=au%2Cau&vprv=1&svpuc=1&mime=video%2Fmp4&rqh=1&gir=yes&clen=111254201&dur=952.117&lmt=1722468130058420&mt=1730720796&fvip=5&keepalive=yes&fexp=51312688%2C51326932&c=IOS&txp=5532434&sparams=expire%2Cei%2Cip%2Cid%2Citag%2Csource%2Crequiressl%2Cxpc%2Cvprv%2Csvpuc%2Cmime%2Crqh%2Cgir%2Cclen%2Cdur%2Clmt&sig=AJfQdSswRgIhAI2AeKv9gk8J0nwA8hVeQWqX_2Eb2T6jn9IlXkZG-RGPAiEAjQuNKvxz2EQxFyn-hGc1UhIh1pDDDmMT_HcJM96dM9k%3D&lsparams=met%2Cmh%2Cmm%2Cmn%2Cms%2Cmv%2Cmvi%2Cpl%2Crms&lsig=ACJ0pHgwRQIhAPB6DzETifN5V5xom8i4C4xYUZisYzVtRy40IiwvejNlAiBJLYvDAudGcsmbbysV_kpNEbfAmf8I5LxP6rISGfcDBw%3D%3D"""
-    get_url_resource(video_url, r"./download/test.mp4")
+    # get_url_resource(video_url, r"./download/test.mp4")
+    get_url_resource_v2(video_url, r"./download/test.mp4")

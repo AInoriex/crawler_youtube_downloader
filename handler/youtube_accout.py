@@ -334,7 +334,7 @@ class YoutubeAccout:
                 \n\tToken Path: {self.yt_dlp_token_path} \
                 \n\tToken Content: {self.token} \
                 \n\t告警时间: {get_now_time_string()}"
-            alarm_lark_text(webhook=getenv("LARK_ERROR_WEBHOOK"), text=notice_text)
+            alarm_lark_text(webhook=getenv("LARK_NOTICE_WEBHOOK"), text=notice_text)
         finally:
             # self.is_process = False
             pass
