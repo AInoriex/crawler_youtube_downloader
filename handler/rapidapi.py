@@ -1,6 +1,7 @@
 import requests
 from time import sleep
 from random import choice, randint
+from pprint import pprint
 
 # 第三方解析youtube视频地址 2
 def get_video_info_v2(video_id, geo='US', retry=3):
@@ -19,9 +20,7 @@ def get_video_info_v2(video_id, geo='US', retry=3):
 
         # Send the request
         response = requests.get(url, headers=headers)
-        # Check if the request was successful
-        if response.status_code != 200:
-            raise ValueError(f"get_video_info_v2 request error, status_code:{response.status_code}")
+        response.raise_for_status()
 
         # Parse the JSON response
         resp = response.json()
@@ -50,3 +49,9 @@ def get_video_info_v2(video_id, geo='US', retry=3):
             get_video_info_v2(video_id=video_id, geo=geo, retry=retry-1)
         else:
             raise e
+
+if __name__ == "__main__":
+    result = get_video_info_v2(video_id="UxxajLWwzqY")
+    pprint(result)
+    dst_url = result.get("url")
+    print(dst_url)

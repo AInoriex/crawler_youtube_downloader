@@ -93,11 +93,12 @@ def download_with_tubedown(video, save_path):
     from handler.rapidapi import get_video_info_v2
     # 解析
     # down_info = extract_download_url(video.source_link)
-    down_info = get_video_info_v2(video_id=get_youtube_vid(video.source_link))
-    dst_url = down_info.get("video_info", {}).get("url")
+    # dst_url = down_info.get("video_info", {}).get("url")
     # audio_url = down_info.get("audio_info", {}).get("url")
     # logger.info(f"视频下载地址：{video_url}")
     # logger.info(f"音频下载地址：{audio_url}")
+    down_info = get_video_info_v2(video_id=get_youtube_vid(video.source_link))
+    dst_url = down_info.get("url")
 
     # 下载
     filename = path.join(save_path, f"{get_youtube_vid(video.source_link)}.{get_mime_type(dst_url, default='mp4')}")
