@@ -90,8 +90,10 @@ def download_with_yt_dlp(video, save_path):
 def download_with_tubedown(video, save_path):
     from handler.tubedown import extract_download_url, get_url_resource, get_url_resource_v2
     from handler.tubedown import get_youtube_vid, get_mime_type
+    from handler.rapidapi import get_video_info_v2
     # 解析
-    down_info = extract_download_url(video.source_link)
+    # down_info = extract_download_url(video.source_link)
+    down_info = get_video_info_v2(video_id=get_youtube_vid(video.source_link))
     dst_url = down_info.get("video_info", {}).get("url")
     # audio_url = down_info.get("audio_info", {}).get("url")
     # logger.info(f"视频下载地址：{video_url}")
