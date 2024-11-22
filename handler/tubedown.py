@@ -61,8 +61,12 @@ def extract_download_url(youtube_url, retry=3):
         audio_info_list = []
         highest_tbr = 0
         json_data = response.json()
-        formats = json_data.get("data", {}).get("formats", [])
+        response_code = json_data.get("code", -1)
+        if response_code != 0:
+            raise ValueError(f"tubedown request failed, {response_code} | {json_data.get('message', 'unknown error')}")
 
+        # 解析data数据
+        formats = json_data.get("data", {}).get("formats", [])
         for resolution in ["(1080p)", "(720p)", "(480p)", "(360p)", "(240p)", "(144p)"]:
             for fmt in formats:
                 if resolution in fmt.get('format', "") and fmt.get('protocol', "") == "https":
@@ -97,55 +101,7 @@ def extract_download_url(youtube_url, retry=3):
     else:
         return {"video_info": video_info, "audio_info": audio_info}
 
-def get_url_resource(url:str, filename:str, _chunk_size=3*1024, retry=10)->str:
-    ''' 下载url资源到本地 '''
-    ua = get_random_ua()
-    # if os.path.exists(filename):
-    #     print(f"[Warn] 该路径下{filename}文件存在，下载跳过")
-    #     return True
-    # makedirs(save_path, exist_ok=True) 
-    logger.info(f"get_url_resource > params {url} → {filename}")
-    headers = {
-        'accept-language': 'zh-CN,zh;q=0.9,en-GB;q=0.8,en;q=0.7,en-US;q=0.6',
-        'cache-control': 'no-cache',
-        'sec-ch-ua': '"Microsoft Edge";v="129", "Not=A?Brand";v="8", "Chromium";v="129"',
-        'sec-ch-ua-mobile': '?0',
-        'sec-fetch-dest': 'empty',
-        'sec-fetch-mode': 'cors',
-        'sec-fetch-site': 'same-origin',
-        'sec-ch-ua-platform': ua.get('os'),
-        'user-agent': ua.get('ua'),
-    }
-    proxies={
-        "http": getenv("HTTP_PROXY") if getenv("HTTP_PROXY") != "" else "",
-        "https": getenv("HTTP_PROXY") if getenv("HTTP_PROXY") != "" else "",
-    }
-    try:
-        resp = requests.get(url, headers=headers, proxies=proxies, timeout=(5, 20), verify=True, stream=True)
-        if not resp.status_code == 200:
-            raise ConnectionError(f"get_url_resource get {url} failed, {resp.status_code} | {str(resp.content, encoding='utf-8')}")
-
-        file_size = int(resp.headers.get('content-length', 0))
-        downloaded = 0
-        with open(filename, mode="wb") as f:
-            for data in resp.iter_content(chunk_size=_chunk_size):
-                downloaded += len(data)
-                f.write(data)
-                done = int(50 * downloaded / file_size)
-                print(f"\r[{'=' * done}{' ' * (50-done)}] {done * 2}%", end='')
-    except Exception as e:
-        logger.error(f"get_url_resource > error: {e}")
-        if retry > 0:
-            print(f"get_url_resource > retry {retry} times on {filename} ")
-            sleep(randint(2,5))
-            get_url_resource(url=url, filename=filename, retry=retry-1)
-        else:
-            raise e
-    else:
-        logger.info(f"\nget_url_resource > download {filename} succeed.")
-        return filename
-
-def get_url_resource_v2(url:str, filename:str):
+def download_resource(url:str, filename:str):
     """
     使用代理服务器从url处下载文件到本地的filename
 
@@ -228,7 +184,7 @@ def get_mime_type(url, default="mp4"):
         return default
 
 if __name__ == '__main__':
-    st =time()
+    st = time()
     url = 'https://www.youtube.com/watch?v=6gk91dpHNo8'
     try:
         down_info = extract_download_url(url)
@@ -243,4 +199,4 @@ if __name__ == '__main__':
 
     # video_url = """https://rr5---sn-i3belnl6.googlevideo.com/videoplayback?expire=1730743103&ei=37YoZ-7pE6mL1d8PpuSSoAg&ip=206.237.16.169&id=o-AMqSU8CgVxIH7TiXp-ejgwYjc5egEGRri94MHuP6JL5a&itag=137&source=youtube&requiressl=yes&xpc=EgVo2aDSNQ%3D%3D&met=1730721503%2C&mh=J1&mm=31%2C29&mn=sn-i3belnl6%2Csn-i3b7knlk&ms=au%2Crdu&mv=u&mvi=5&pl=23&rms=au%2Cau&vprv=1&svpuc=1&mime=video%2Fmp4&rqh=1&gir=yes&clen=111254201&dur=952.117&lmt=1722468130058420&mt=1730720796&fvip=5&keepalive=yes&fexp=51312688%2C51326932&c=IOS&txp=5532434&sparams=expire%2Cei%2Cip%2Cid%2Citag%2Csource%2Crequiressl%2Cxpc%2Cvprv%2Csvpuc%2Cmime%2Crqh%2Cgir%2Cclen%2Cdur%2Clmt&sig=AJfQdSswRgIhAI2AeKv9gk8J0nwA8hVeQWqX_2Eb2T6jn9IlXkZG-RGPAiEAjQuNKvxz2EQxFyn-hGc1UhIh1pDDDmMT_HcJM96dM9k%3D&lsparams=met%2Cmh%2Cmm%2Cmn%2Cms%2Cmv%2Cmvi%2Cpl%2Crms&lsig=ACJ0pHgwRQIhAPB6DzETifN5V5xom8i4C4xYUZisYzVtRy40IiwvejNlAiBJLYvDAudGcsmbbysV_kpNEbfAmf8I5LxP6rISGfcDBw%3D%3D"""
     # get_url_resource(video_url, r"./download/test.mp4")
-    get_url_resource_v2(video_url, r"./download/test.mp4")
+    download_resource(video_url, r"./download/test.mp4")
