@@ -11,9 +11,8 @@ from uuid import uuid4
 from pprint import pprint
 from utils.lark import alarm_lark_text
 from utils.utime import get_now_time_string
-from utils import logger
-
-logger = logger.init_logger("youtube_account")
+from utils.logger import logger
+# logger = logger.init_logger("youtube_account")
 
 class YoutubeAccout:
     '''
@@ -360,8 +359,36 @@ class YoutubeAccout:
         finally:
             return ret
 
+def handle_switch_account()->YoutubeAccout:
+    """
+    账号轮询登陆直至成功
+
+    :param ac: YoutubeAccout, 账号实例
+    :return: None
+    """
+    while 1:
+        try:
+            ac = YoutubeAccout()
+            ac.youtube_login_handler() # 需要登陆成功才能继续处理
+        except Exception as e:
+            logger.error(f"Pipeline > 初始化账号出错, 等待30s重试, traceback: {e}")
+            sleep(30)
+            continue
+        else:
+            logger.info(f"Pipeline > 初始化账号成功，{ac.id} | {ac.username}")
+            break
+    return ac
 
 if __name__ == "__main__":
+    # 初始化账号
+    # ac = YoutubeAccout()
+    # if OAUTH2_PATH == "":
+    #     if getenv("CRAWLER_SWITCH_ACCOUNT_ON", False) == "True":
+    #         print("main > 账号为空，准备初始化账号")
+    #         ac = handle_switch_account()
+    #     else:
+    #         print("main > [!] 当前OAuth2账号为空")
+
     ac = YoutubeAccout(
         id=17,
     )
