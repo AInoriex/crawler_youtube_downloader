@@ -2,15 +2,14 @@
 from dotenv import load_dotenv
 load_dotenv()
 
-from sys import argv
 from os import path, makedirs, getenv
 from time import time, sleep
 from handler.youtube import download_by_playlist_url, download_url
-from utils import logger
+from utils.logger import logger
 from utils.utime import get_now_time_string, format_second_to_time_string
 from utils.lark import alarm_lark_text
 
-logger = logger.init_logger("main_download")
+# logger = logger.init_logger("main_download")
 
 # SERVER_NAME = "local_download_test"
 SERVER_NAME =  getenv("SERVER_NAME")

@@ -1,10 +1,29 @@
 # -*- coding: UTF8 -*-
-
-import logging
 import time
 import os
 
 def init_logger(name):
+    """
+    Initializes a logger with logging package.
+
+    The logger is configured to have different log levels based on the DEBUG environment variable.
+    If DEBUG is set to 'True', the log level is set to DEBUG; otherwise, it is set to INFO.
+    The logger outputs logs to both a file and the console. The log files are stored in a directory
+    specified by the LOG_PATH environment variable, organized by date.
+
+    The console output includes color formatting for different log levels:
+    - ERROR messages are displayed in red.
+    - WARNING messages are displayed in yellow.
+    - INFO messages are displayed in blue.
+    - DEBUG messages are displayed in green.
+
+    Args:
+        name (str): The name of the logger.
+
+    Returns:
+        logging.Logger: The configured logger.
+    """
+    import logging
     logger = logging.getLogger(name)
     if os.getenv('DEBUG') == 'True':
         logger.setLevel(logging.DEBUG)
@@ -47,3 +66,34 @@ def init_logger(name):
     logger.addHandler(ch)
 
     return logger
+
+def init_loguru():
+    """
+    Initializes a logger with loguru package.
+
+    The logger is configured to have different log levels based on the DEBUG environment variable.
+    If DEBUG is set to 'True', the log level is set to DEBUG; otherwise, it is set to INFO.
+    The logger outputs logs to both a file and the console. The log files are stored in a directory
+    specified by the LOG_PATH environment variable, organized by date.
+
+    Args:
+        None
+
+    Returns:
+        logging.Logger: The configured logger.
+    """
+    from loguru import logger
+    log_date = time.strftime("%Y-%m-%d", time.localtime())
+    log_time = time.strftime("%Y%m%d%H%M%S", time.localtime())
+
+    log_dir = os.path.join(os.getenv('LOG_PATH'), log_date)
+    os.makedirs(log_dir, exist_ok=True)
+
+    filename = os.path.join(log_dir, f"{log_time}.log")
+    logger.add(
+        filename,
+        level= "DEBUG" if os.getenv('DEBUG')=='True' else "INFO",
+        format="{time:YYYY-MM-DD HH:mm:ss} | {file:line} | {level} | {message}",
+    )
+    return logger
+logger = init_loguru()
