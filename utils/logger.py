@@ -92,8 +92,30 @@ def init_loguru():
     filename = os.path.join(log_dir, f"{log_time}.log")
     logger.add(
         filename,
-        level= "DEBUG" if os.getenv('DEBUG')=='True' else "INFO",
-        format="{time:YYYY-MM-DD HH:mm:ss} | {file:line} | {level} | {message}",
+        level="DEBUG" if os.getenv('DEBUG')=='True' else "INFO",
+        format="{time:YYYY-MM-DD HH:mm:ss} | {level} | {file}:{line} | Process.{process} | {message}",
+        colorize=True,
+        # 完整错误信息
+        diagnose=True if os.getenv('DEBUG')=='True' else False,
+        # 错误信息回溯
+        backtrace=True,
+        # 启动队列处理(多进程)
+        enqueue=True, 
+        # 单个日志文件大小
+        rotation="500MB",
+        # 日志文件保留时间
+        retention="15 days",
+        # 日志文件压缩格式
+        compression="zip",
     )
+    logger.info(f"初始化日志记录器成功, 路径:{filename}")
     return logger
+
 logger = init_loguru()
+
+if __name__ == "__main__":
+    logger.debug("这是一条测试日志")
+    logger.info("这是一条测试日志")
+    logger.warning("这是一条测试日志")
+    logger.error("这是一条测试日志")
+    exit()

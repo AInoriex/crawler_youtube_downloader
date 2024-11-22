@@ -2,9 +2,6 @@
 import time
 import random
 
-# from utils.logger import init_logger
-# logger = init_logger("utils/time")
-
 def random_sleep(rand_range:int, rand_st:int) -> None:
     '''随机等待[rand_st, rand_st+rand_range]秒'''
     if rand_range < 1:
@@ -13,7 +10,6 @@ def random_sleep(rand_range:int, rand_st:int) -> None:
         rand_st = 5
     trand = random.randint(rand_st, rand_st + rand_range)
     sleep_time = format_second_to_time_string(trand)
-    # logger.info(f"random_sleep > 等待 {sleep_time}")
     print(f"random_sleep > 等待 {sleep_time}")
     time.sleep(trand)
     return
