@@ -191,7 +191,7 @@ def extract_download_url_ytjar_step3(video_id, tS, tH, retry=5):
         else:
             raise e
 
-def extract_download_url_ytjar(video_id, retry=3)->str:
+def extract_download_url_ytjar(video_id, retry=getenv("YTB_MAX_RETRY", 5))->str:
     """
     Extract download url from radpidapi of ytjar api.
 
