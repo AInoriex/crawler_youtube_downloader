@@ -30,7 +30,7 @@ def extract_download_url_ytjar_step1(video_id):
     if response.status_code != 200:
         logger.error(f"extract_download_url_ytjar_step1 request {url} error, status:{response.status_code}")
         raise HTTPError(f"request {url} error", response=response)
-    logger.debug("extract_download_url_ytjar_step1 response json", response.json())
+    logger.debug(f"extract_download_url_ytjar_step1 response json {response.json()}")
     logger.info("extract_download_url_ytjar_step1 success")
     return response.json()
 
@@ -170,7 +170,7 @@ def extract_download_url_ytjar_step3(video_id, tS, tH):
     if response.status_code != 200:
         logger.error(f"extract_download_url_ytjar_step3 request {url} error, status:{response.status_code}")
         raise HTTPError(f"request {url} error", response=response)
-    logger.debug("extract_download_url_ytjar_step3 response json", response.json())
+    logger.debug(f"extract_download_url_ytjar_step3 response json {response.json()}")
     url = response.json().get("link", {}).get("18", [""])[0]
     logger.info(f"extract_download_url_ytjar_step3 success, url:{url}")
     return url

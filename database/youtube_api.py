@@ -8,6 +8,7 @@
 from os import getenv
 from requests import get, post
 from utils.utime import get_time_stamp
+from utils.logger import logger
 from database.handler import Video
 
 def get_video_for_download(query_id=0, query_source_type=int(getenv("DOWNLOAD_SOURCE_TYPE")), query_language=getenv("DOWNLOAD_LANGUAGE"))->Video|None:
@@ -25,12 +26,12 @@ def get_video_for_download(query_id=0, query_source_type=int(getenv("DOWNLOAD_SO
         }
         # print(f"get_video_for_download > Get list Request | url:{url} params:{params}")
         resp = get(url=url, params=params)
-        print(f"get_video_for_download > Get list Response | status_code:{resp.status_code}, content:{str(resp.content, encoding='utf-8')}")
+        # print(f"get_video_for_download > Get list Response | status_code:{resp.status_code}, content:{str(resp.content, encoding='utf-8')}")
         assert resp.status_code == 200
         resp_json = resp.json()
-        # print("get_video_for_download > Get list Response detail | status_code:%d, content:%s"%(resp_json["code"], resp_json["msg"]))
+        logger.debug(f"get_video_for_download > Get list Response detail | status_code:{resp_json['code']}, content:{resp_json['msg']}")
         if len(resp_json["data"]["result"]) <= 0:
-            print("get_video_for_download > get nothing.")
+            logger.warning("get_video_for_download > No video to download")
             return None
         resp_data:dict = resp_json["data"]["result"][0]
         video = Video(
@@ -47,12 +48,10 @@ def get_video_for_download(query_id=0, query_source_type=int(getenv("DOWNLOAD_SO
             lock=resp_data.get("lock", 0),
             info=resp_data.get("info", ""),
         )
-    except Exception as e:
-        print(f"get_video_for_download > get video failed, req:{params}, resp:{resp.status_code}|{str(resp.content, encoding='utf-8')}, Error: {e}")
-        # raise Exception(f"get_video_for_download failed, req:{params}, resp:{resp_json}")
-        return None
-    else:
         return video
+    except Exception as e:
+        logger.error(f"get_video_for_download > get video failed, req:{params}, resp:{resp.status_code}|{str(resp.content, encoding='utf-8')}, Error: {e}")
+        return None
 
 def update_video_record(video:Video):
     ''' 更新ytb记录

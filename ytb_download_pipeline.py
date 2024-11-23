@@ -110,7 +110,7 @@ def download_with_tubedown(video, save_path):
     filename = path.join(save_path, f"{get_youtube_vid(video.source_link)}.{get_mime_type(dst_url, default='mp4')}")
     download_path = download_resource(dst_url, filename)
     if download_path == "":
-        raise("download_with_tubedown download_path empty")
+        raise ValueError("download_with_tubedown empty download file")
     return download_path
 
 def youtube_download_handler(video, save_path):
@@ -163,6 +163,7 @@ def main_pipeline(pid):
             download_path = youtube_download_handler(video, DOWNLOAD_PATH)
             time_2 = time()
             spend_download_time = max(time_2 - time_1, 0.01) #下载花费时间
+            logger.success(f"Pipeline > 进程 {pid} 处理任务 {video_id} 下载完成, from: {video_link}, to: {download_path}")
             
             # 上传云端
             cloud_path = urljoin(
@@ -185,12 +186,14 @@ def main_pipeline(pid):
                 raise ValueError("invalid cloud type")
             time_3 = time()
             spend_upload_time = max(time_3 - time_2, 0.01) #上传花费时间
+            logger.success(f"Pipeline > 进程 {pid} 处理任务 {video_id} 上传完成, from: {download_path}, to: {cloud_link}")
             
             # 更新数据库
             video.status = 2 # upload done
             video.cloud_type = 2 if CLOUD_TYPE == "obs" else 1 # 1:cos 2:obs
             video.cloud_path = cloud_link
             update_video_record(video)
+            logger.success(f"Pipeline > 进程 {pid} 处理任务 {video_id} 更新数据库完成")
             
             # 日志记录
             spend_total_time = int(time_3 - time_1) #总花费时间
@@ -201,6 +204,7 @@ def main_pipeline(pid):
             
             # 移除本地文件
             remove(download_path)
+            logger.success(f"Pipeline > 进程 {pid} 移除本地文件 {download_path}")
 
         except KeyboardInterrupt:
             logger.warning(f"Pipeline > 进程 {pid} interrupted processing {video_id}, reverting...")
@@ -270,14 +274,15 @@ if __name__ == "__main__":
     import multiprocessing
     # PROCESS_NUM = 1 #同时处理的进程数量
     PROCESS_NUM = int(getenv("PROCESS_NUM"))
-
     try:
         with multiprocessing.Pool(PROCESS_NUM) as pool:
             for i in range(PROCESS_NUM):
-                pool.apply_async(main_pipeline, (i))
+                pool.apply_async(main_pipeline, (i,))
             pool.close()
             pool.join()
         # main_pipeline(0)
     except Exception as e:
         logger.critical(f"[ERROR] > Exception raise: {e.__class__} | {e}")
         pool.terminate()
+    finally:
+        pass
