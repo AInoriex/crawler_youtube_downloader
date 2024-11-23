@@ -17,12 +17,18 @@ proxies={
 #  Pricing  https://rapidapi.com/ytjar/api/youtube-video-download-info/pricing
 #  Quota    500,000 / Month
 #  QpsLimit 1000 requests per hour
+
+ytjar_key_list = [
+    "cc0f530252mshcd81b9c614428aep140232jsn4cb1d6dfebb3",
+    "56921e587amshc0bb152f60c8571p1779d8jsn0c949090f93b",
+    "8e4125bc5bmsheb83bbaba0c87a6p1dd95bjsn65084ee21b78"
+]
+
 def extract_download_url_ytjar_step1(video_id):
     url = "https://youtube-video-download-info.p.rapidapi.com/dl"
     querystring = {"id": video_id}
     headers = {
-        "x-rapidapi-key": "cc0f530252mshcd81b9c614428aep140232jsn4cb1d6dfebb3",
-        # "x-rapidapi-key": "56921e587amshc0bb152f60c8571p1779d8jsn0c949090f93b",
+        "x-rapidapi-key": choice(ytjar_key_list),
         "x-rapidapi-host": "youtube-video-download-info.p.rapidapi.com"
     }
     response = requests.get(url, headers=headers, params=querystring, proxies=proxies)
@@ -140,40 +146,50 @@ def extract_download_url_ytjar_step2(_middle_dict):
     logger.info("extract_download_url_ytjar_step2 success")
     return parse_ts_th(decoded_string)
 
-def extract_download_url_ytjar_step3(video_id, tS, tH):
-    url = "https://mp4api.ytjar.info/get.v2.php"
-    headers = {
-        'accept': '*/*',
-        'accept-language': 'zh-CN,zh;q=0.9,en;q=0.8,en-GB;q=0.7,en-US;q=0.6',
-        'cache-control': 'no-cache',
-        # 'cookie': '_gid=GA1.2.1474390812.1732154341; _ga=GA1.1.2108734893.1732152366; _ga_7HKSCJ4WQH=GS1.1.1732154340.1.1.1732154451.0.0.0; _ga_5C2KJN1R85=GS1.1.1732172790.4.1.1732172810.0.0.0',
-        'pragma': 'no-cache',
-        'priority': 'u=1, i',
-        'referer': 'https://mp4api.ytjar.info/dl2.php?id=GkFeNGqoW2B1iWVBfqAjTPDDlUjas8cYUflDQX8%3D&itag=17',
-        'sec-ch-ua': '"Chromium";v="130", "Microsoft Edge";v="130", "Not?A_Brand";v="99"',
-        'sec-ch-ua-mobile': '?0',
-        'sec-ch-ua-platform': '"Windows"',
-        'sec-fetch-dest': 'empty',
-        'sec-fetch-mode': 'cors',
-        'sec-fetch-site': 'same-origin',
-        'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36 Edg/130.0.0.0',
-        'x-requested-with': 'XMLHttpRequest',
-    }
-    params = {
-        'id': video_id,
-        's': tS,
-        'h': tH,
-    }
-    # response = requests.get(url, params=params, headers=headers)
-    response = requests.get(url, params=params, headers=headers, proxies=proxies)
-    response.raise_for_status()
-    if response.status_code != 200:
-        logger.error(f"extract_download_url_ytjar_step3 request {url} error, status:{response.status_code}")
-        raise HTTPError(f"request {url} error", response=response)
-    logger.debug(f"extract_download_url_ytjar_step3 response json {response.json()}")
-    url = response.json().get("link", {}).get("18", [""])[0]
-    logger.info(f"extract_download_url_ytjar_step3 success, url:{url}")
-    return url
+def extract_download_url_ytjar_step3(video_id, tS, tH, retry=5):
+    try:
+        url = "https://mp4api.ytjar.info/get.v2.php"
+        headers = {
+            'accept': '*/*',
+            'accept-language': 'zh-CN,zh;q=0.9,en;q=0.8,en-GB;q=0.7,en-US;q=0.6',
+            'cache-control': 'no-cache',
+            # 'cookie': '_gid=GA1.2.1474390812.1732154341; _ga=GA1.1.2108734893.1732152366; _ga_7HKSCJ4WQH=GS1.1.1732154340.1.1.1732154451.0.0.0; _ga_5C2KJN1R85=GS1.1.1732172790.4.1.1732172810.0.0.0',
+            'pragma': 'no-cache',
+            'priority': 'u=1, i',
+            'referer': 'https://mp4api.ytjar.info/dl2.php?id=GkFeNGqoW2B1iWVBfqAjTPDDlUjas8cYUflDQX8%3D&itag=17',
+            'sec-ch-ua': '"Chromium";v="130", "Microsoft Edge";v="130", "Not?A_Brand";v="99"',
+            'sec-ch-ua-mobile': '?0',
+            'sec-ch-ua-platform': '"Windows"',
+            'sec-fetch-dest': 'empty',
+            'sec-fetch-mode': 'cors',
+            'sec-fetch-site': 'same-origin',
+            'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36 Edg/130.0.0.0',
+            'x-requested-with': 'XMLHttpRequest',
+        }
+        params = {
+            'id': video_id,
+            's': tS,
+            'h': tH,
+        }
+        # response = requests.get(url, params=params, headers=headers)
+        response = requests.get(url, params=params, headers=headers, proxies=proxies)
+        response.raise_for_status()
+        if response.status_code != 200:
+            logger.error(f"extract_download_url_ytjar_step3 request {url} error, status:{response.status_code}")
+            raise HTTPError(f"request {url} error", response=response)
+        logger.debug(f"extract_download_url_ytjar_step3 response json {response.json()}")
+        url = response.json().get("link", {}).get("18", [""])[0]
+        logger.info(f"extract_download_url_ytjar_step3 success, url:{url}")
+        if url == "":
+            raise HTTPError("extract_download_url_ytjar_step3 failed, url is empty", response=response)
+        return url
+    except Exception as e:
+        logger.error(f"extract_download_url_ytjar_step3 error, {e}, retry:{retry}")
+        if retry > 0: # 防止接口处理中 {'status': 'fail', 'code': '403', 'processing': True, 'msg': 'Retry'}
+            sleep(randint(1, 3))
+            return extract_download_url_ytjar_step3(video_id=video_id, tS=tS, tH=tH, retry=retry-1)
+        else:
+            raise e
 
 def extract_download_url_ytjar(video_id, retry=3)->str:
     """
