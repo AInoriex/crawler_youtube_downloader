@@ -220,7 +220,6 @@ def main_pipeline(pid):
             continue_fail_count += 1
             time_fail = time()
             logger.error(f"Pipeline > 进程 {pid} 处理任务 {video_id} 失败, 错误信息:{e}")
-            logger.error(e, stack_info=True)
             # 任务回调
             video.status = -1
             video.lock = 0
