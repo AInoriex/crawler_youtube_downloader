@@ -102,9 +102,10 @@ class Logger():
         os.makedirs(log_dir, exist_ok=True)
         # 日志配置
         filename = os.path.join(log_dir, f"{log_time}.log")
+        filters_level = "DEBUG" if os.getenv('DEBUG')=='True' else "INFO"
         logger.add(
             filename,
-            level="DEBUG" if os.getenv('DEBUG')=='True' else "INFO",
+            level=filters_level,
             format="{time:YYYY-MM-DD HH:mm:ss} | {level} | {file}:{line} | Process.{process} | {message}",
             colorize=True,
             # 完整错误信息
@@ -120,7 +121,7 @@ class Logger():
             # 日志文件压缩格式
             compression="zip",
         )
-        logger.info(f"初始化日志记录器成功, 路径:{filename}")
+        logger.info(f"初始化日志记录器成功, 日志level:{filters_level}, 日志路径:{filename}")
         self.logger = logger
 
 g = Logger()
