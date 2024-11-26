@@ -206,16 +206,28 @@ def main_pipeline(pid):
             remove(download_path)
             logger.success(f"Pipeline > 进程 {pid} 移除本地文件 {download_path}")
 
+            # 通知
+            notice_text = f"[Youtube Crawler] download pipeline success. \
+                \n\t下载服务: {SERVER_NAME} | 进程: {pid} \
+                \n\t下载信息: 轮数 {download_round} | 处理总数 {run_count} | 连续失败数 {continue_fail_count} \
+                \n\t资源信息: {video.id} | {video.vid} | {video.language} \
+                \n\tLink: {video.source_link} -> {video.cloud_path} \
+                \n\t资源共 {file_size:.2f}MB , 共处理了{format_second_to_time_string(spend_total_time)} \
+                \n\t下载时长: {format_second_to_time_string(spend_download_time)} , 上传时长: {format_second_to_time_string(spend_upload_time)} \
+                \n\t下载均速: {file_size/spend_download_time:.2f}M/s , 上传均速: {file_size/spend_upload_time:.2f}M/s \
+                \n\tIP: {local_ip} | {get_public_ip()}"
+            logger.info(notice_text)
+            alarm_lark_text(webhook=getenv("LARK_NOTICE_WEBHOOK"), text=notice_text)
+
+            logger.success(f"Pipeline > 进程 {pid} 处理任务 {video_id} 完毕")
         except KeyboardInterrupt:
             logger.warning(f"Pipeline > 进程 {pid} interrupted processing {video_id}, reverting...")
             # 任务回调
             video.lock = 0
             update_video_record(video)
-            # return
-            # break
             raise KeyboardInterrupt
-        except BrokenPipeError as e: # 账号被封处理
-            return
+        # except BrokenPipeError as e: # 账号被封处理
+        #     return
         except Exception as e:
             continue_fail_count += 1
             time_fail = time()
@@ -249,18 +261,6 @@ def main_pipeline(pid):
             continue
         else:
             continue_fail_count = 0
-            # 告警
-            notice_text = f"[Youtube Crawler | DEBUG] download pipeline succeed. \
-                \n\t下载服务: {SERVER_NAME} | 进程: {pid} \
-                \n\t下载信息: 轮数 {download_round} | 处理总数 {run_count} | 连续失败数 {continue_fail_count} \
-                \n\t资源信息: {video.id} | {video.vid} | {video.language} \
-                \n\tLink: {video.source_link} -> {video.cloud_path} \
-                \n\t资源共 {file_size:.2f}MB , 共处理了{format_second_to_time_string(spend_total_time)} \
-                \n\t下载时长: {format_second_to_time_string(spend_download_time)} , 上传时长: {format_second_to_time_string(spend_upload_time)} \
-                \n\t下载均速: {file_size/spend_download_time:.2f}M/s , 上传均速: {file_size/spend_upload_time:.2f}M/s \
-                \n\tIP: {local_ip} | {get_public_ip()}"
-            logger.info(notice_text)
-            alarm_lark_text(webhook=getenv("LARK_NOTICE_WEBHOOK"), text=notice_text)
             youtube_sleep(is_succ=True, run_count=run_count, download_round=download_round)
         finally:
             download_round = run_count//LIMIT_LAST_COUNT + 1
