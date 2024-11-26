@@ -50,7 +50,7 @@ def get_video_for_download(query_id=0, query_source_type=int(getenv("DOWNLOAD_SO
         )
         return video
     except Exception as e:
-        logger.error(f"get_video_for_download > get video failed, req:{params}, resp:{resp.status_code}|{str(resp.content, encoding='utf-8')}, Error: {e}")
+        logger.error(f"get_video_for_download > get video failed, url:{url}, req:{params}, error: {e}")
         return None
 
 def update_video_record(video:Video):

@@ -1,6 +1,7 @@
 import requests
 from time import sleep
 from random import randint
+from utils.logger import logger
 
 # class LarkNotice():
 #     def __init__(self, notice_text) -> None:
@@ -31,14 +32,15 @@ def alarm_lark_text(webhook:str, text:str, retry:int=3):
         assert resp.status_code == 200
         assert resp.json()["code"] == 0
     except Exception as e:
-        print(f"Lark > [!] 发送飞书失败: {resp.content}, error: {e}")
+        logger.error(f"Lark > [!] 发送飞书失败: {e}")
         if retry > 0:
             sleep(randint(3,5))
             return alarm_lark_text(webhook=webhook, text=text, retry=retry-1)
         else:
-            raise e
+            # raise e
+            return
     else:
-        print(f"Lark > 已通知飞书: {str(resp.content, encoding='utf-8')}")
+        logger.info(f"Lark > 已通知飞书: {webhook}")
 
 if __name__ == "__main__":
     webhook = "https://open.feishu.cn/open-apis/bot/v2/hook/34755f1e-5fc7-46c9-9fee-177317a581ee"

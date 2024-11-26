@@ -20,9 +20,8 @@ def get_public_ip()->str:
         if response.status_code == 200:
             resp = response.json()
             return resp['origin']
-    except requests.exceptions.RequestException:
-        pass
-    return ""
+    except:
+        return ""
  
 if __name__ == '__main__':
     external_ip = get_public_ip()
