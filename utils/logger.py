@@ -101,6 +101,7 @@ class Logger():
         log_dir = os.path.join(os.getenv('LOG_PATH'), log_date)
         os.makedirs(log_dir, exist_ok=True)
         # 日志配置
+        logger.remove()
         filename = os.path.join(log_dir, f"{log_time}.log")
         filters_level = "DEBUG" if os.getenv('DEBUG')=='True' else "INFO"
         logger.add(

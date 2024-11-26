@@ -40,7 +40,7 @@ def alarm_lark_text(webhook:str, text:str, retry:int=3):
             # raise e
             return
     else:
-        logger.info(f"Lark > 已通知飞书: {webhook}")
+        logger.debug(f"Lark > 已通知飞书: {webhook}")
 
 if __name__ == "__main__":
     webhook = "https://open.feishu.cn/open-apis/bot/v2/hook/34755f1e-5fc7-46c9-9fee-177317a581ee"

@@ -246,7 +246,7 @@ def main_pipeline(pid):
                 \n\tIP: {local_ip} | {get_public_ip()} \
                 \n\tError: {e} \
                 \n\t告警时间: {get_now_time_string()} \
-                \n\tStack Info: {format_exc()[:500]}"
+                \n\tStack Info: {format_exc()[-500:]}"
             logger.error(notice_text)
             alarm_lark_text(webhook=getenv("LARK_NOTICE_WEBHOOK"), text=notice_text)
             # 失败过多直接退出
