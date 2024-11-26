@@ -1,6 +1,8 @@
 # -*- coding: UTF8 -*-
 import time
 import os
+import sys
+from loguru import logger
 
 def init_logger(name):
     """
@@ -67,7 +69,6 @@ def init_logger(name):
 
     return logger
 
-
 class Logger():
     _instance = None
     def __new__(cls, *args, **kwargs):
@@ -94,23 +95,23 @@ class Logger():
         Returns:
             logging.Logger: The configured logger.
         """
-        from loguru import logger
         log_date = time.strftime("%Y-%m-%d", time.localtime())
         log_time = time.strftime("%Y%m%d.%H-%M", time.localtime())
         # 预留日志路径
         log_dir = os.path.join(os.getenv('LOG_PATH'), log_date)
         os.makedirs(log_dir, exist_ok=True)
         # 日志配置
-        logger.remove()
+        logger.remove(0)
         filename = os.path.join(log_dir, f"{log_time}.log")
-        filters_level = "DEBUG" if os.getenv('DEBUG')=='True' else "INFO"
+        log_level = "DEBUG" if os.getenv('DEBUG')=='True' else "INFO"
+        log_format = "{time:YYYY-MM-DD HH:mm:ss} | {level} | {file}:{line} | Process.{process} | {message}"
+        logger.add(sys.stderr, level=log_level, format=log_format, colorize=True, backtrace=True, diagnose=True)
         logger.add(
             filename,
-            level=filters_level,
-            format="{time:YYYY-MM-DD HH:mm:ss} | {level} | {file}:{line} | Process.{process} | {message}",
-            colorize=True,
+            level=log_level,
+            format=log_format,
             # 完整错误信息
-            diagnose=True if os.getenv('DEBUG')=='True' else False,
+            diagnose=True,
             # 错误信息回溯
             backtrace=True,
             # 启动队列处理(多进程)
@@ -122,7 +123,7 @@ class Logger():
             # 日志文件压缩格式
             compression="zip",
         )
-        logger.info(f"初始化日志记录器成功, 日志level:{filters_level}, 日志路径:{filename}")
+        logger.info(f"初始化日志记录器成功, 日志level:{log_level}, 日志路径:{filename}")
         self.logger = logger
 
 g = Logger()
