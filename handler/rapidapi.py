@@ -1,10 +1,9 @@
 import requests
+from requests import HTTPError
 from time import sleep
 from random import choice, randint
-from pprint import pprint
 from loguru import logger
 from os import getenv
-from requests import HTTPError
 
 proxies={
     'http': getenv("HTTP_PROXY") if getenv("HTTP_PROXY") != "" else "",
@@ -24,7 +23,7 @@ ytjar_key_list = [
     "8e4125bc5bmsheb83bbaba0c87a6p1dd95bjsn65084ee21b78"
 ]
 
-def extract_download_url_ytjar_step1(video_id):
+def extract_download_url_ytjar_step1(video_id:str):
     url = "https://youtube-video-download-info.p.rapidapi.com/dl"
     querystring = {"id": video_id}
     headers = {
@@ -40,7 +39,7 @@ def extract_download_url_ytjar_step1(video_id):
     logger.info("extract_download_url_ytjar_step1 success")
     return response.json()
 
-def extract_download_url_ytjar_step2(_middle_dict):
+def extract_download_url_ytjar_step2(_middle_dict:dict):
     import urllib.parse
     import re
     def _0xe14c(d, e, f):
@@ -146,7 +145,7 @@ def extract_download_url_ytjar_step2(_middle_dict):
     logger.info("extract_download_url_ytjar_step2 success")
     return parse_ts_th(decoded_string)
 
-def extract_download_url_ytjar_step3(video_id, tS, tH, retry=5):
+def extract_download_url_ytjar_step3(video_id:str, tS:str, tH:str, retry=5):
     try:
         url = "https://mp4api.ytjar.info/get.v2.php"
         headers = {
@@ -191,7 +190,7 @@ def extract_download_url_ytjar_step3(video_id, tS, tH, retry=5):
         else:
             raise e
 
-def extract_download_url_ytjar(video_id, retry=getenv("YTB_MAX_RETRY", 5))->str:
+def extract_download_url_ytjar(video_id:str, retry=3)->str:
     """
     Extract download url from radpidapi of ytjar api.
 
@@ -219,6 +218,7 @@ def extract_download_url_ytjar(video_id, retry=getenv("YTB_MAX_RETRY", 5))->str:
             raise e
 
 if __name__ == "__main__":
+    from pprint import pprint
     logger.add("logs/debug/ytjar.log", level="DEBUG")
     # logger.add("logs/debug/ytjar.log", level="INFO")
     result = extract_download_url_ytjar(video_id="HGrWeL8fHlU")
