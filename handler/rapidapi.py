@@ -39,7 +39,7 @@ def extract_download_url_ytjar_step1(video_id:str):
     logger.info("extract_download_url_ytjar_step1 success")
     return response.json()
 
-def extract_download_url_ytjar_step2(_middle_dict:dict):
+def extract_download_url_ytjar_step2(_middle_dict:dict, retry=3):
     import urllib.parse
     import re
     def _0xe14c(d, e, f):
@@ -106,44 +106,52 @@ def extract_download_url_ytjar_step2(_middle_dict:dict):
         else:
             raise ValueError("tS or tH not found in the input text.")
 
-    # link_url = _middle_dict.get("link", {}).get("17", [""])[0] # 144p NOT SUPPORT
-    # link_url = _middle_dict.get("link", {}).get("22", [""])[0] # 720p NOT SUPPORT
-    link_url = _middle_dict.get("link", {}).get("18", [""])[0] # 360p
-    if not link_url:
-        raise ValueError("extract_download_url_ytjar_step2 extract empty link_url")
-    headers = {
-        'accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7',
-        'accept-language': 'zh-CN,zh;q=0.9,en;q=0.8,en-GB;q=0.7,en-US;q=0.6',
-        'cache-control': 'no-cache',
-        # 'cookie': '_gid=GA1.2.1474390812.1732154341; _ga=GA1.1.2108734893.1732152366; _ga_7HKSCJ4WQH=GS1.1.1732154340.1.1.1732154451.0.0.0; _ga_5C2KJN1R85=GS1.1.1732172790.4.1.1732172810.0.0.0',
-        'pragma': 'no-cache',
-        'priority': 'u=0, i',
-        'sec-ch-ua': '"Chromium";v="130", "Microsoft Edge";v="130", "Not?A_Brand";v="99"',
-        'sec-ch-ua-mobile': '?0',
-        'sec-ch-ua-platform': '"Windows"',
-        'sec-fetch-dest': 'document',
-        'sec-fetch-mode': 'navigate',
-        'sec-fetch-site': 'none',
-        'sec-fetch-user': '?1',
-        'upgrade-insecure-requests': '1',
-        'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36 Edg/130.0.0.0',
-    }
-    # response = requests.get(link_url, headers=headers)
-    response = requests.get(link_url, headers=headers, proxies=proxies)
-    response.raise_for_status()
-    if response.status_code != 200:
-        logger.error(f"extract_download_url_ytjar_step2 request {link_url} error, status:{response.status_code}")
-        raise HTTPError(f"request {link_url} error", response=response)
-    Encrypted_list = parse_html(response.text)
-    logger.debug(f"extract_download_url_ytjar_step2 Encrypted_list: {Encrypted_list}")
-    encoded_string = Encrypted_list[0]
-    key1 = Encrypted_list[2]
-    key2 = Encrypted_list[3]
-    key3 = Encrypted_list[4]
-    decoded_string = decode_string(encoded_string, key1, key2, key3)
-    logger.debug(f"extract_download_url_ytjar_step2 decoded_string: {decoded_string}")
-    logger.info("extract_download_url_ytjar_step2 success")
-    return parse_ts_th(decoded_string)
+    try:
+        # link_url = _middle_dict.get("link", {}).get("17", [""])[0] # 144p NOT SUPPORT
+        # link_url = _middle_dict.get("link", {}).get("22", [""])[0] # 720p NOT SUPPORT
+        link_url = _middle_dict.get("link", {}).get("18", [""])[0] # 360p
+        if not link_url:
+            raise ValueError("extract_download_url_ytjar_step2 extract empty link_url")
+        headers = {
+            'accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7',
+            'accept-language': 'zh-CN,zh;q=0.9,en;q=0.8,en-GB;q=0.7,en-US;q=0.6',
+            'cache-control': 'no-cache',
+            # 'cookie': '_gid=GA1.2.1474390812.1732154341; _ga=GA1.1.2108734893.1732152366; _ga_7HKSCJ4WQH=GS1.1.1732154340.1.1.1732154451.0.0.0; _ga_5C2KJN1R85=GS1.1.1732172790.4.1.1732172810.0.0.0',
+            'pragma': 'no-cache',
+            'priority': 'u=0, i',
+            'sec-ch-ua': '"Chromium";v="130", "Microsoft Edge";v="130", "Not?A_Brand";v="99"',
+            'sec-ch-ua-mobile': '?0',
+            'sec-ch-ua-platform': '"Windows"',
+            'sec-fetch-dest': 'document',
+            'sec-fetch-mode': 'navigate',
+            'sec-fetch-site': 'none',
+            'sec-fetch-user': '?1',
+            'upgrade-insecure-requests': '1',
+            'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36 Edg/130.0.0.0',
+        }
+        # response = requests.get(link_url, headers=headers)
+        response = requests.get(link_url, headers=headers, proxies=proxies)
+        response.raise_for_status()
+        if response.status_code != 200:
+            logger.error(f"extract_download_url_ytjar_step2 request {link_url} error, status:{response.status_code}")
+            raise HTTPError(f"request {link_url} error", response=response)
+        Encrypted_list = parse_html(response.text)
+        logger.debug(f"extract_download_url_ytjar_step2 Encrypted_list: {Encrypted_list}")
+        encoded_string = Encrypted_list[0]
+        key1 = Encrypted_list[2]
+        key2 = Encrypted_list[3]
+        key3 = Encrypted_list[4]
+        decoded_string = decode_string(encoded_string, key1, key2, key3)
+        logger.debug(f"extract_download_url_ytjar_step2 decoded_string: {decoded_string}")
+        logger.info("extract_download_url_ytjar_step2 success")
+        return parse_ts_th(decoded_string)
+    except Exception as e:
+        logger.error(f"extract_download_url_ytjar_step2 error: {e}")
+        if retry > 0:
+            sleep(randint(1, 3))
+            return extract_download_url_ytjar_step2(_middle_dict=_middle_dict, retry=retry-1)
+        else:
+            raise e
 
 def extract_download_url_ytjar_step3(video_id:str, tS:str, tH:str, retry=5):
     try:
