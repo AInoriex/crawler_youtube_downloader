@@ -7,7 +7,7 @@ from os import getenv, path, remove
 from time import time, sleep
 from urllib.parse import urljoin
 from traceback import format_exc
-from handler.youtube import is_touch_fish_time, get_cloud_save_path_by_language
+from handler.youtube import is_touch_fish_time, get_cloud_save_path_by_language, get_youtube_vid
 from handler.yt_dlp import clean_path
 from database.youtube_api import get_video_for_download, update_video_record
 from utils.logger import logger
@@ -89,17 +89,28 @@ def download_with_yt_dlp(video, save_path):
     return download_path
 
 def download_with_tubedown(video, save_path):
+    # 1 解析真实视频url
+    from handler.tubedown import get_youtube_vid, get_mime_type
+    from handler.tubedown import extract_download_url, download_resource
+    down_info = extract_download_url(video.source_link)
+    video_url = down_info.get("video_info", {}).get("url")
+    audio_url = down_info.get("audio_info", {}).get("url")
+    logger.info(f"视频下载地址：{video_url}")
+    logger.info(f"音频下载地址：{audio_url}")
+
+    # 2 合并音视频资源(根据实际接口返回结果判断)
+    # TODO
+
+    # 3 下载视频资源
+    filename = path.join(save_path, f"{get_youtube_vid(video.source_link)}.{get_mime_type(video_url, default='mp4')}")
+    download_path = download_resource(video_url, filename)
+    if download_path == "":
+        raise ValueError("download_with_tubedown get empty download file")
+    return download_path
+
+def download_with_rapidapi(video, save_path):
     from handler.tubedown import download_resource, get_youtube_vid, get_mime_type
     # 1 解析真实视频url
-    # 1.1 tubedown
-    # from handler.tubedown import extract_download_url
-    # down_info = extract_download_url(video.source_link)
-    # dst_url = down_info.get("video_info", {}).get("url")
-    # audio_url = down_info.get("audio_info", {}).get("url")
-    # logger.info(f"视频下载地址：{video_url}")
-    # logger.info(f"音频下载地址：{audio_url}")
-
-    # 1.2 rapid api
     from handler.rapidapi import extract_download_url_ytjar
     dst_url = extract_download_url_ytjar(video_id=get_youtube_vid(video.source_link))
 
@@ -110,13 +121,29 @@ def download_with_tubedown(video, save_path):
     filename = path.join(save_path, f"{get_youtube_vid(video.source_link)}.{get_mime_type(dst_url, default='mp4')}")
     download_path = download_resource(dst_url, filename)
     if download_path == "":
-        raise ValueError("download_with_tubedown empty download file")
+        raise ValueError("download_with_rapidapi get empty download file")
+    return download_path
+
+def download_with_yt_api(video, save_path):
+    from handler.yt_api import ytapi_handler
+    download_path = ytapi_handler(
+        video_id=get_youtube_vid(video.source_link),
+        save_path=save_path
+    )
+    if download_path == "":
+        raise ValueError("download_with_yt_api get empty download file")
     return download_path
 
 def youtube_download_handler(video, save_path):
     if getenv("YTB_DOWNLOAD_MODE", "") == "tubedown":
         logger.info("youtube_download_handler > 当前下载模式: tubedown")
         return download_with_tubedown(video, save_path)
+    elif getenv("YTB_DOWNLOAD_MODE", "") == "rapidapi":
+        logger.info("youtube_download_handler > 当前下载模式: rapidapi")
+        return download_with_rapidapi(video, save_path)
+    elif getenv("YTB_DOWNLOAD_MODE", "") == "yt_api":
+        logger.info("youtube_download_handler > 当前下载模式: yt_api")
+        return download_with_yt_api(video, save_path)
     elif getenv("YTB_DOWNLOAD_MODE", "") == "yt_dlp":
         logger.info("youtube_download_handler > 当前下载模式: yt_dlp")
         return download_with_yt_dlp(video, save_path)
