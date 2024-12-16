@@ -2,15 +2,16 @@ import requests
 from requests import HTTPError
 from time import sleep
 from random import choice, randint
-from loguru import logger
 from os import getenv
+# from loguru import logger
+from utils.logger import logger
 
 proxies={
     'http': getenv("HTTP_PROXY") if getenv("HTTP_PROXY") != "" else "",
     'https': getenv("HTTP_PROXY") if getenv("HTTP_PROXY") != "" else "",
 }
 
-# 第三方解析youtube视频地址ytjar免费版
+#  第三方解析youtube视频地址ytjar免费版
 #  资源     360p mp4           
 #  Refer    https://rapidapi.com/ytjar/api/ytstream-download-youtube-videos
 #  Pricing  https://rapidapi.com/ytjar/api/youtube-video-download-info/pricing

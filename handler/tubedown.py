@@ -1,9 +1,10 @@
 # https://tubedown.cn/youtube
 from time import sleep, time
 from os import getenv
-from loguru import logger
 import requests
 from random import choice, randint
+# from loguru import logger
+from utils.logger import logger
 
 def get_random_ua():
     from fake_useragent import UserAgent

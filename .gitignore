@@ -3,9 +3,17 @@ __pycache__
 doc/
 logs/
 conf/*
-download/*
+
+# config
+.*
 .venv/
-.env
+.env*
 .vscode/
+
+# temp
 temp/
+test/
 cache/
+download/
+1daygsuitgmail
+*_test.py

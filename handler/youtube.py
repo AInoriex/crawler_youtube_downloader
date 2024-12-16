@@ -2,7 +2,6 @@ from pytz import utc, timezone
 from os import path, makedirs, walk, getenv
 from urllib.parse import urlparse, parse_qs, urlencode, urlunparse
 from datetime import datetime
-from database.youtube_api import Video
 from handler.yt_dlp import download_by_watch_url, download_by_playlist_url
 
 def download_url(url, save_path):
@@ -147,3 +146,32 @@ def get_cloud_save_path_by_language(save_path:str, lang_key:str)->str:
     else:
         ret_path = save_path
     return ret_path
+
+def get_youtube_vid(url:str):
+    import re
+    from uuid import uuid4
+    default = uuid4()
+    try:
+        # 使用正则表达式匹配v参数
+        video_id_match = re.search(r"v=([^&#]+)", url)
+        if video_id_match:
+            video_id = video_id_match.group(1)
+            return video_id
+        else:
+            raise ValueError("get_youtube_vid re.search failed")
+    except Exception as e:
+        print(f"get_youtube_vid > extract video id error, {e}")
+        return default
+
+def get_mime_type(url, default="mp4"):
+    import re
+    try:
+        mime_match = re.search(r"mime=([^&]+)", url)
+        if mime_match:
+            mime_value = mime_match.group(1)
+            return mime_value.split("%2F")[1]
+        else:
+            raise ValueError("get_mime_type re.search failed")
+    except Exception as e:
+        print(f"get_mime_type > get url mime type error, {e}")
+        return default
