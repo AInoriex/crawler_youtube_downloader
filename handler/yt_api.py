@@ -19,9 +19,11 @@ proxies={
 #  QpsLimit 1000 requests per hour
 
 ytapi_key_list = [
-    # "cc0f530252mshcd81b9c614428aep140232jsn4cb1d6dfebb3",
-    # "56921e587amshc0bb152f60c8571p1779d8jsn0c949090f93b",
-    "8e4125bc5bmsheb83bbaba0c87a6p1dd95bjsn65084ee21b78"
+    "cc0f530252mshcd81b9c614428aep140232jsn4cb1d6dfebb3",
+    "56921e587amshc0bb152f60c8571p1779d8jsn0c949090f93b",
+    "8e4125bc5bmsheb83bbaba0c87a6p1dd95bjsn65084ee21b78",
+    "b84c557df2msh0123dad4e431495p1bc879jsn0460569c867c",
+    "aa8315de9fmsh2ad3e674a998b91p1195abjsna48469488c83",
 ]
 
 def ytapi_handler_step1(vid:str, cgeo:str="RU")->dict:
