@@ -47,7 +47,7 @@ def ytapi_handler_step1(vid:str, cgeo:str="RU")->dict:
 
 def ytapi_handler_step2(json_data:dict)->tuple[str, str]:
     """ 解析响应提取下载链接 """
-    qualityLabel_list = ["1080p", "720p", "480p", "360p"]
+    qualityLabel_list = ["1080p", "720p", "480p", "360p", "240p", "144p"]
     audioQuality_list = ["AUDIO_QUALITY_MEDIUM", "AUDIO_QUALITY_LOW", "AUDIO_QUALITY_ULTRALOW"]
     video_url, audio_url = "", ""
     formats = json_data.get("adaptiveFormats", [])
