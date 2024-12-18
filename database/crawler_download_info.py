@@ -4,8 +4,6 @@ import time
 import random
 from os import getenv
 from mysql.connector.pooling import MySQLConnection
-from mysql.connector import Error
-from typing import List
 from database.db_manager import DatabaseManager
 
 TABLE_NAME = str("crawler_download_info")
@@ -29,6 +27,7 @@ class Video:
         status: 0: 已爬取, 1: 本地已下载, 2: 已上传云端未处理, 3: 已处理未上传, 4: 已处理已上传
         lock: 处理锁, 0: 未锁定, 1: 锁定, 2: 错误
         info: meta数据, json格式
+        comment: 备注
     """
 
     def __init__(
@@ -45,6 +44,7 @@ class Video:
         status=0,
         lock=0,
         info="{}",
+        comment="",
     ):
         self.id = id
         self.vid = vid
@@ -58,6 +58,7 @@ class Video:
         self.status = status
         self.lock = lock
         self.info = info
+        self.comment = comment
 
     def __str__(self) -> str:
         return (

@@ -9,12 +9,21 @@ from os import getenv
 from requests import get, post
 from utils.utime import get_time_stamp
 from utils.logger import logger
-from database.handler import Video
+from database.crawler_download_info import Video
 
-def get_video_for_download(query_id=0, query_source_type=int(getenv("DOWNLOAD_SOURCE_TYPE")), query_language=getenv("DOWNLOAD_LANGUAGE"))->Video|None:
-    ''' 获取一条ytb记录
-    @API    get_video_for_download
-    '''
+def get_video_for_download(
+        query_id=0,
+        query_source_type=int(getenv("DOWNLOAD_SOURCE_TYPE")),
+        query_language=getenv("DOWNLOAD_LANGUAGE"),
+    )->Video|None:
+    """
+    get a video for downloading from `DATABASE_GET_API` in .env
+
+    :param query_id: int, video id in database, default is 0 which means get a random video
+    :param query_source_type: int, source type of video, default is `DOWNLOAD_SOURCE_TYPE` in .env
+    :param query_language: str, language of video, default is `DOWNLOAD_LANGUAGE` in .env
+    :return: Video or None
+    """
     try:
         url = getenv("DATABASE_GET_API")
         params = {
@@ -24,9 +33,9 @@ def get_video_for_download(query_id=0, query_source_type=int(getenv("DOWNLOAD_SO
             "language": query_language,
             "limit": 1
         }
-        # print(f"get_video_for_download > Get list Request | url:{url} params:{params}")
+        # logger.debug(f"get_video_for_download > Get list Request | url:{url} params:{params}")
         resp = get(url=url, params=params)
-        # print(f"get_video_for_download > Get list Response | status_code:{resp.status_code}, content:{str(resp.content, encoding='utf-8')}")
+        # logger.debug(f"get_video_for_download > Get list Response | status_code:{resp.status_code}, content:{str(resp.content, encoding='utf-8')}")
         assert resp.status_code == 200
         resp_json = resp.json()
         logger.debug(f"get_video_for_download > Get list Response detail | status_code:{resp_json['code']}, content:{resp_json['msg']}")
@@ -47,6 +56,7 @@ def get_video_for_download(query_id=0, query_source_type=int(getenv("DOWNLOAD_SO
             status=resp_data.get("status", 0),
             lock=resp_data.get("lock", 0),
             info=resp_data.get("info", ""),
+            comment=resp_data.get("comment", "")
         )
         return video
     except Exception as e:
@@ -54,9 +64,13 @@ def get_video_for_download(query_id=0, query_source_type=int(getenv("DOWNLOAD_SO
         return None
 
 def update_video_record(video:Video):
-    ''' 更新ytb记录
-    @API    update_video_record
-    '''
+    """
+    update a video record in database with `DATABASE_UPDATE_API` in .env
+
+    :param video: Video, the video record to be updated
+    :return: None
+    """
+    
     url = getenv("DATABASE_UPDATE_API")
     params = {
         "sign": get_time_stamp()
@@ -67,17 +81,17 @@ def update_video_record(video:Video):
         "status": video.status,
         "cloud_type": video.cloud_type,
         "cloud_path": video.cloud_path,
+        "comment": video.comment,
     }
-    # print(f"update_video_record > Update Request | url:{url} params:{params} body:{reqbody}")
+    # logger.debug(f"update_video_record > update request | url:{url} params:{params} body:{reqbody}")
     resp = post(url=url, params=params, json=reqbody)
     assert resp.status_code == 200
     resp_json = resp.json()
-    # print("update_video_record > Update Response | status_code:%d, content:%s"%(resp_json["code"], resp_json["msg"]))
-    resp_code = resp_json["code"]
-    if resp_code != 0:
+    # logger.debug("update_video_record > update response | status_code:%d, content:%s"%(resp_json["code"], resp_json["msg"]))
+    if resp_json["code"] != 0:
         raise Exception(f"update_video_record failed, req:{reqbody}, resp:{resp.status_code}|{str(resp.content, encoding='utf-8')}")
     else:
-        print(f"update_video_record > update succeed, req:{reqbody}")
+        logger.info(f"update_video_record > update succeed, req:{reqbody}")
 
 if __name__ == "__main__":
     # 测试获取一条ytb记录

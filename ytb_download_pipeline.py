@@ -24,7 +24,7 @@ from utils.ip import get_local_ip, get_public_ip
 # ---- 初始化参数 -----
 # ---------------------
 
-local_ip = get_local_ip()
+LOCAL_IP = get_local_ip()
 ''' 本地IP '''
 SERVER_NAME = getenv("SERVER_NAME")
 ''' 服务名称 '''
@@ -160,25 +160,22 @@ def main_pipeline(pid):
     continue_fail_count = int(0) # 连续失败的任务个数
     while True:
         video = get_video_for_download(
-            query_id=0, 
             query_source_type=int(getenv("DOWNLOAD_SOURCE_TYPE")),
             query_language=getenv("DOWNLOAD_LANGUAGE"),
         )
-        # video = get_video_for_download(query_id=668925)
-
         if video is None:
-            logger.warning(f"Pipeline > 进程 {pid} 无任务待处理, 当前轮次: {download_round} | {run_count}, 等待中...")
+            logger.warning(f"Pipeline > 当前轮次: {download_round} | {run_count}, 进程 {pid} 无任务待处理, 等待中...")
             random_sleep(rand_st=20, rand_range=10)
             continue
         if video.id <= 0 or video.source_link == "":
-            logger.warning(f"Pipeline > 进程 {pid} 获取无效任务, 跳过处理...")
+            logger.warning(f"Pipeline > 当前轮次: {download_round} | {run_count}, 进程 {pid} 获取无效任务, 跳过处理...")
             random_sleep(rand_st=20, rand_range=10)
             continue
         try:
             run_count += 1
             video_id = video.id
             video_link = video.source_link
-            logger.info(f"Pipeline > 进程 {pid} 处理任务 {video_id} -- {video_link}, 当前轮次: {download_round} | {run_count}")
+            logger.info(f"Pipeline > 当前轮次: {download_round} | {run_count}, 进程 {pid} 处理任务 {video_id} -- {video_link}")
             if video.info not in [None, "", "{}"]:
                 info = json.loads(video.info)
                 cloud_save_path = info.get("cloud_save_path", "")
@@ -188,11 +185,11 @@ def main_pipeline(pid):
             # 下载
             time_1 = time()
             download_path = youtube_download_handler(video, DOWNLOAD_PATH)
-            time_2 = time()
-            spend_download_time = max(time_2 - time_1, 0.01) #下载花费时间
+            spend_download_time = max(time() - time_1, 0.01) #下载花费时间
             logger.success(f"Pipeline > 进程 {pid} 处理任务 {video_id} 下载完成, from: {video_link}, to: {download_path}")
             
             # 上传云端
+            time_2 = time()
             cloud_path = urljoin(
                 get_cloud_save_path_by_language(
                     save_path=cloud_save_path if cloud_save_path !='' else getenv("CLOUD_SAVE_PATH"),
@@ -211,19 +208,18 @@ def main_pipeline(pid):
                 )
             else:
                 raise ValueError("invalid cloud type")
-            time_3 = time()
-            spend_upload_time = max(time_3 - time_2, 0.01) #上传花费时间
+            spend_upload_time = max(time() - time_2, 0.01) #上传花费时间
             logger.success(f"Pipeline > 进程 {pid} 处理任务 {video_id} 上传完成, from: {download_path}, to: {cloud_link}")
             
             # 更新数据库
-            video.status = 2 # upload done
+            video.status = 2 # 2:已上传云端
             video.cloud_type = 2 if CLOUD_TYPE == "obs" else 1 # 1:cos 2:obs
             video.cloud_path = cloud_link
             update_video_record(video)
             logger.success(f"Pipeline > 进程 {pid} 处理任务 {video_id} 更新数据库完成")
             
             # 日志记录
-            spend_total_time = int(time_3 - time_1) #总花费时间
+            spend_total_time = int(time() - time_1) #总花费时间
             file_size = get_file_size(download_path)
             logger.info(
                 f"Pipeline > 进程 {pid} 完成处理任务 {video_id}, 已上传至 {cloud_path}, 文件大小: {file_size} MB, 共处理了 {format_second_to_time_string(spend_total_time)}"
@@ -242,7 +238,7 @@ def main_pipeline(pid):
                 \n\t资源共 {file_size:.2f}MB , 共处理了{format_second_to_time_string(spend_total_time)} \
                 \n\t下载时长: {format_second_to_time_string(spend_download_time)} , 上传时长: {format_second_to_time_string(spend_upload_time)} \
                 \n\t下载均速: {file_size/spend_download_time:.2f}M/s , 上传均速: {file_size/spend_upload_time:.2f}M/s \
-                \n\tIP: {local_ip} | {get_public_ip()}"
+                \n\tIP: {LOCAL_IP} | {get_public_ip()}"
             logger.info(notice_text)
             alarm_lark_text(webhook=getenv("LARK_NOTICE_WEBHOOK"), text=notice_text)
 
@@ -262,6 +258,7 @@ def main_pipeline(pid):
             # 任务回调
             video.status = -1
             video.lock = 0
+            video.comment += f'<div class="download_pipeline">pipeline error:{e}, error_time:{get_now_time_string()}</div>'
             update_video_record(video)
             # 告警
             notice_text = f"[Youtube Crawler | ERROR] download pipeline failed. \
@@ -270,7 +267,7 @@ def main_pipeline(pid):
                 \n\t资源信息: {video.id} | {video.vid} | {video.language} \
                 \n\tSource Link: {video.source_link} \
                 \n\t共处理了{format_second_to_time_string(int(time_fail-time_1))} \
-                \n\tIP: {local_ip} | {get_public_ip()} \
+                \n\tIP: {LOCAL_IP} | {get_public_ip()} \
                 \n\tError: {e} \
                 \n\t告警时间: {get_now_time_string()} \
                 \n\tStack Info: {format_exc()[-500:]}"
