@@ -148,22 +148,52 @@ def get_cloud_save_path_by_language(save_path:str, lang_key:str)->str:
     return ret_path
 
 def get_youtube_vid(url:str):
+    """
+    Extracts the YouTube video ID from a given URL.
+
+    This function handles both standard YouTube watch URLs and YouTube Shorts URLs.
+    For watch URLs, it extracts the video ID from the 'v' query parameter. For Shorts 
+    URLs, it extracts the ID from the URL path.
+
+    :param url: The YouTube URL from which to extract the video ID.
+    :return: The extracted video ID as a string, or an empty string if extraction fails.
+    :raises ValueError: If the URL does not contain a recognizable format for extracting the video ID.
+    """
+
     import re
     from uuid import uuid4
-    default = uuid4()
+    # default = uuid4()
+    default = ""
     try:
-        # 使用正则表达式匹配v参数
-        video_id_match = re.search(r"v=([^&#]+)", url)
-        if video_id_match:
-            video_id = video_id_match.group(1)
-            return video_id
+        if "watch" in url:
+            # https://www.youtube.com/watch?v=kw1fXZNfnVc => kw1fXZNfnVc
+            video_id_match = re.search(r"v=([^&#]+)", url)
+            if video_id_match:
+                return video_id_match.group(1)
+            else:
+                raise ValueError("get_youtube_vid watch url re.search failed")
+        elif "shorts" in url:
+            # https://www.youtube.com/shorts/kw1fXZNfnVc => kw1fXZNfnVc
+            return url.split("/")[-1]
         else:
-            raise ValueError("get_youtube_vid re.search failed")
+            raise ValueError("get_youtube_vid not support url")
     except Exception as e:
         print(f"get_youtube_vid > extract video id error, {e}")
-        return default
+        return ""
 
 def get_mime_type(url, default="mp4"):
+    """
+    Extracts the MIME type from a YouTube URL.
+
+    If the URL contains "mime", it tries to extract the MIME type using a regex 
+    pattern. If the extraction fails or the URL format is unsupported, it returns 
+    a default value.
+
+    :param url: The YouTube URL from which to extract the MIME type.
+    :param default: The default value to return if extraction fails.
+    :return: The extracted MIME type or the default value if extraction fails.
+    :raises ValueError: If the URL format is unsupported or extraction fails.
+    """
     import re
     try:
         mime_match = re.search(r"mime=([^&]+)", url)
