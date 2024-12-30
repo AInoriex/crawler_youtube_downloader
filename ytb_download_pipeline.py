@@ -103,7 +103,11 @@ def download_with_tubedown(video, save_path):
 
     # 3 下载视频资源
     filename = path.join(save_path, f"{get_youtube_vid(video.source_link)}.{get_mime_type(video_url, default='mp4')}")
-    download_path = download_resource(video_url, filename)
+    download_path = download_resource(
+        url = video_url,
+        filename = filename,
+        proxies = {'http': getenv("HTTP_PROXY"),'https': getenv("HTTP_PROXY")} if getenv("HTTP_PROXY", "") != "" else {}
+    )
     if download_path == "":
         raise ValueError("download_with_tubedown get empty download file")
     return download_path
@@ -119,7 +123,11 @@ def download_with_rapidapi(video, save_path):
 
     # 3 下载视频资源
     filename = path.join(save_path, f"{get_youtube_vid(video.source_link)}.{get_mime_type(dst_url, default='mp4')}")
-    download_path = download_resource(dst_url, filename)
+    download_path = download_resource(
+        url = dst_url, 
+        filename = filename, 
+        proxies = {'http': getenv("HTTP_PROXY"),'https': getenv("HTTP_PROXY")} if getenv("HTTP_PROXY", "") != "" else {}
+    )
     if download_path == "":
         raise ValueError("download_with_rapidapi get empty download file")
     return download_path

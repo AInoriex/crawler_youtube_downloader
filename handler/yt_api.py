@@ -6,10 +6,7 @@ from os import getenv, path, remove
 # from loguru import logger
 from utils.logger import logger
 
-proxies={
-    'http': getenv("HTTP_PROXY") if getenv("HTTP_PROXY") != "" else "",
-    'https': getenv("HTTP_PROXY") if getenv("HTTP_PROXY") != "" else "",
-}
+proxies = {'http': getenv("HTTP_PROXY"),'https': getenv("HTTP_PROXY")} if getenv("HTTP_PROXY", "") != "" else {}
 
 #  第三方解析youtube视频地址yt-api
 #  资源     bestvideo+bestaudio  
@@ -73,7 +70,7 @@ def ytapi_download(url:str, filename:str, retry=3)->str:
         raise ValueError("ytapi_download url or filename is empty")
     from handler.tubedown import download_resource
     try:
-        download_path = download_resource(url, filename)
+        download_path = download_resource(url, filename, proxies=proxies)
         return download_path
     except Exception as e:
         logger.error(f"ytapi_download error, url:{url}, filename:{filename}, error:{e}, retry:{retry}")

@@ -56,9 +56,7 @@ def yt_dlp_init(v:Video, save_path:str, video_ext:str="mp4", audio_ext:str="m4a"
         "quiet": False if DEBUG_MODE else True, # Do not print messages to stdout.
         "verbose": True if DEBUG_MODE else False, # Print additional info to stdout.
         "proxy": (
-            getenv("HTTP_PROXY")
-            if getenv("HTTP_PROXY") != ""
-            else None
+            getenv("HTTP_PROXY") if getenv("HTTP_PROXY") != "" else None
         ),
         "ratelimit": 10 * 1024 * 1024, # x * M,
         "nooverwrites": True,
@@ -125,9 +123,7 @@ def load_options(local_save_path:str):
         "verbose": True if DEBUG_MODE else False, # Print additional info to stdout.
         "dumpjson": True,
         "proxy": (
-            getenv("HTTP_PROXY")
-            if getenv("HTTP_PROXY") != ""
-            else None
+            getenv("HTTP_PROXY") if getenv("HTTP_PROXY") != "" else None
         ),
         "ratelimit": 5 * 1024 * 1024, # x * M,
         "nooverwrites": True,

@@ -6,10 +6,7 @@ from os import getenv
 # from loguru import logger
 from utils.logger import logger
 
-proxies={
-    'http': getenv("HTTP_PROXY") if getenv("HTTP_PROXY") != "" else "",
-    'https': getenv("HTTP_PROXY") if getenv("HTTP_PROXY") != "" else "",
-}
+proxies = {'http': getenv("HTTP_PROXY"),'https': getenv("HTTP_PROXY")} if getenv("HTTP_PROXY", "") != "" else {}
 
 #  第三方解析youtube视频地址ytjar免费版
 #  资源     360p mp4           

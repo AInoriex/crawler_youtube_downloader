@@ -102,7 +102,7 @@ def extract_download_url(youtube_url, retry=3):
     else:
         return {"video_info": video_info, "audio_info": audio_info}
 
-def download_resource(url:str, filename:str):
+def download_resource(url:str, filename:str, proxies={}):
     """
     使用代理服务器从url处下载文件到本地的filename
 
@@ -124,10 +124,6 @@ def download_resource(url:str, filename:str):
         ('sec-ch-ua-platform',ua.get('os')),
         ('user-agent',ua.get('ua')),
     ]
-    proxies={
-        'http': getenv("HTTP_PROXY") if getenv("HTTP_PROXY") != "" else "",
-        'https': getenv("HTTP_PROXY") if getenv("HTTP_PROXY") != "" else "",
-    }
 
     def reporthook(block_num, block_size, total_size):
         if block_num // 2 == 0:
@@ -137,8 +133,10 @@ def download_resource(url:str, filename:str):
         
     try:
         # create the object, assign it to a variable
-        proxy_handler = request.ProxyHandler(proxies)
-        # proxy_handler = request.ProxyHandler()
+        if proxies:
+            proxy_handler = request.ProxyHandler(proxies)
+        else:
+            proxy_handler = request.ProxyHandler()
 
         # construct a new opener using your proxy settings
         opener = request.build_opener(proxy_handler)
