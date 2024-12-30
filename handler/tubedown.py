@@ -153,35 +153,6 @@ def download_resource(url:str, filename:str, proxies={}):
         print(f"\ndownload_file > 文件已下载到：{filename}")
         return filename
 
-def get_youtube_vid(url:str):
-    import re
-    from uuid import uuid4
-    default = uuid4()
-    try:
-        # 使用正则表达式匹配v参数
-        video_id_match = re.search(r"v=([^&#]+)", url)
-        if video_id_match:
-            video_id = video_id_match.group(1)
-            return video_id
-        else:
-            raise ValueError("get_youtube_vid re.search failed")
-    except Exception as e:
-        logger.error(f"get_youtube_vid > error, {e}")
-        return default
-    
-def get_mime_type(url, default="mp4"):
-    import re
-    try:
-        mime_match = re.search(r"mime=([^&]+)", url)
-        if mime_match:
-            mime_value = mime_match.group(1)
-            return mime_value.split("%2F")[1]
-        else:
-            raise ValueError("get_mime_type re.search failed")
-    except Exception as e:
-        logger.error(f"get_mime_type > error, {e}")
-        return default
-
 if __name__ == '__main__':
     st = time()
     url = 'https://www.youtube.com/watch?v=6gk91dpHNo8'

@@ -179,7 +179,7 @@ def get_youtube_vid(url:str):
             raise ValueError("get_youtube_vid not support url")
     except Exception as e:
         print(f"get_youtube_vid > extract video id error, {e}")
-        return ""
+        return default
 
 def get_mime_type(url, default="mp4"):
     """

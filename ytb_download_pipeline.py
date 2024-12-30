@@ -90,7 +90,7 @@ def download_with_yt_dlp(video, save_path):
 
 def download_with_tubedown(video, save_path):
     # 1 解析真实视频url
-    from handler.tubedown import get_youtube_vid, get_mime_type
+    from handler.youtube import get_youtube_vid, get_mime_type
     from handler.tubedown import extract_download_url, download_resource
     down_info = extract_download_url(video.source_link)
     video_url = down_info.get("video_info", {}).get("url")
@@ -113,7 +113,7 @@ def download_with_tubedown(video, save_path):
     return download_path
 
 def download_with_rapidapi(video, save_path):
-    from handler.tubedown import download_resource, get_youtube_vid, get_mime_type
+    from handler.youtube import download_resource, get_youtube_vid, get_mime_type
     # 1 解析真实视频url
     from handler.rapidapi import extract_download_url_ytjar
     dst_url = extract_download_url_ytjar(video_id=get_youtube_vid(video.source_link))

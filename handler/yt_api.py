@@ -83,7 +83,7 @@ def ytapi_download(url:str, filename:str, retry=3)->str:
 def ytapi_handler_step3(video_url:str, audio_url:str, save_path:str)->tuple[str, str]:
     """ 下载视频 """
     from uuid import uuid4
-    from handler.tubedown import get_mime_type
+    from handler.youtube import get_mime_type
     if video_url == "" or audio_url == "":
         raise ValueError(f"ytapi_handler_step3 params invalid, video_url:{video_url}, audio_url:{audio_url}")
     video_path, audio_path = "", ""
