@@ -42,7 +42,7 @@ class YoutubeAccout:
         self.status = None # 0: 初始化, 1: 可登陆, 2: 占用, -1: 失效
         self.token = "" # 当前token值
         self.yt_dlp_oauth2_path = yt_dlp_oauth2_path # yt-dlp OAUTH2_PATH 路径
-        self.yt_dlp_token_path = "" # token_data.json 存放路径
+        self.token_path = "" # token_data.json 存放路径
         # self.is_process:bool = False # 是否在处理换号
 
     def __del__(self):
@@ -61,7 +61,7 @@ class YoutubeAccout:
         print("> login_name:", self.login_name)
         print("> status:", self.status)
         print("> token:", self.token)
-        print("└─────────────  youtube account info ─────────────┘ ")
+        print("└───────────── youtube account info ─────────────┘ ")
         return
 
     def get_account_info(self):
@@ -191,7 +191,7 @@ class YoutubeAccout:
                 "recovery_email": verify_email
             }
             # logger.debug(f"youtube_account > account_auto_login request | url:{url} reqbody:{reqbody}")
-            resp = requests.post(url=url,json=reqbody)
+            resp = requests.post(url=url, json=reqbody, timeout=60)
             # logger.debug(f"youtube_account > account_auto_login response | status_code:{resp.status_code}, content:{str(resp.content, encoding='utf-8')}")
             '''
             {
@@ -214,7 +214,8 @@ class YoutubeAccout:
             # pprint(token)
         except Exception as e:
             # 登入失败
-            logger.error(f"youtube_account > account_auto_login failed with status_code:{resp.status_code}, content:{str(resp.content, encoding='utf-8')}, error:{e}")
+            logger.error(f"youtube_account > unknown error:{e}")
+            logger.error(f"youtube_account > account_auto_login failed with status_code:{resp.status_code}, content:{str(resp.content, encoding='utf-8')}")
         finally:
             return token
 
@@ -263,7 +264,7 @@ class YoutubeAccout:
         logger.info(f"youtube_account > 当前服务账号缓存更新成功：{OAUTH2_PATH}")
         return
 
-    def youtube_login_handler(self)->int:
+    def yt_dlp_login_handler(self)->int:
         """
        Youtube账号自动换号
 
@@ -304,7 +305,7 @@ class YoutubeAccout:
             if token_path == "":
                 logger.error("youtube_account > youtube_login_handler 保存token失败")
                 raise Exception("youtube_login_handler 保存token失败")
-            self.yt_dlp_token_path = token_path
+            self.token_path = token_path
 
             # 4. 更新yt-dlp需要的oauth2路径
             self.update_oauth2(token_path=token_path)
@@ -330,10 +331,10 @@ class YoutubeAccout:
                 \n\t登入方: {self.login_name} \
                 \n\t账密: {self.id} | {self.username} {self.password} \
                 \n\tOAUTH2_PATH: {self.yt_dlp_oauth2_path} \
-                \n\tToken Path: {self.yt_dlp_token_path} \
+                \n\tToken Path: {self.token_path} \
                 \n\tToken Content: {self.token} \
                 \n\t告警时间: {get_now_time_string()}"
-            alarm_lark_text(webhook=getenv("LARK_NOTICE_WEBHOOK"), text=notice_text)
+            alarm_lark_text(webhook=getenv("LARK_INFO_WEBHOOK"), text=notice_text)
         finally:
             # self.is_process = False
             pass
@@ -369,7 +370,7 @@ def handle_switch_account()->YoutubeAccout:
     while 1:
         try:
             ac = YoutubeAccout()
-            ac.youtube_login_handler() # 需要登陆成功才能继续处理
+            ac.yt_dlp_login_handler() # 需要登陆成功才能继续处理
         except Exception as e:
             logger.error(f"Pipeline > 初始化账号出错, 等待30s重试, traceback: {e}")
             sleep(30)

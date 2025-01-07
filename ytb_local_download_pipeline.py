@@ -57,7 +57,7 @@ def local_download_pipeline():
                 \n\t处理时长: {format_second_to_time_string(int(time()-time_1))} \
                 \n\t告警时间: {get_now_time_string()}"
             logger.error(notice_text)
-            alarm_lark_text(webhook=getenv("LARK_NOTICE_WEBHOOK"), text=notice_text)
+            alarm_lark_text(webhook=getenv("LARK_INFO_WEBHOOK"), text=notice_text)
 
 
 if __name__ == "__main__":
