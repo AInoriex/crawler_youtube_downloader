@@ -1,12 +1,13 @@
 from database.crawler_download_info import Video
 from handler.youtube_accout import YoutubeAccout
-from os import getenv
+from os import getenv, remove
 from time import sleep, time
 from utils.logger import logger
 from utils.utime import get_now_time_string
 from utils.lark import alarm_lark_text
 from pytubefix import YouTube
 from pytubefix.cli import on_progress
+from pytubefix.helpers import reset_cache
 
 def pytubefix_login_handler()->YoutubeAccout:
     """
@@ -123,3 +124,14 @@ def pytubefix_audio_handler(video:Video, save_path:str)->str|None:
         raise ValueError(f"pytubefix_audio_handler > download the video {video.source_link} fail")
     logger.debug(f"pytubefix_audio_handler > 文件已下载到:{download_path}")
     return download_path
+
+def reset_pytubefix_oauth_token():
+    # 清理旧token
+    reset_cache()
+
+    # 初始化新token
+    test_url = "https://www.youtube.com/watch?v=GFyAjmqpbCI"
+    yt = YouTube(test_url, use_oauth=True, allow_oauth_cache=True)
+    ys = yt.streams.get_lowest_resolution()
+    tmp_file = ys.download(output_path=".", filename="tmp_GFyAjmqpbCI.mp4", max_retries=3, timeout=10)
+    remove(tmp_file)
