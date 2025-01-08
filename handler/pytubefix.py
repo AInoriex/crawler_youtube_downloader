@@ -119,19 +119,21 @@ def pytubefix_audio_handler(video:Video, save_path:str)->str|None:
     
     # download_filepath = ys.download(output_path="download", filename_prefix="test-", skip_existing=True, max_retries=3, timeout=10)
     filename=f"{video.vid}.{format_type}"
-    download_path = ys.download(output_path=save_path, filename=filename, skip_existing=True, max_retries=3, timeout=10)
+    download_path = ys.download(output_path=save_path, filename=filename, skip_existing=True, max_retries=3, timeout=30)
     if not download_path:
         raise ValueError(f"pytubefix_audio_handler > download the video {video.source_link} fail")
     logger.debug(f"pytubefix_audio_handler > 文件已下载到:{download_path}")
     return download_path
 
 def reset_pytubefix_oauth_token():
+    proxies = {'http': getenv("HTTP_PROXY"),'https': getenv("HTTP_PROXY")} if getenv("HTTP_PROXY", "") != "" else None
+
     # 清理旧token
     # reset_cache()
 
     # 初始化新token
     test_url = "https://www.youtube.com/watch?v=GFyAjmqpbCI"
-    yt = YouTube(test_url, use_oauth=True, allow_oauth_cache=True)
+    yt = YouTube(test_url, use_oauth=True, allow_oauth_cache=True, proxies=proxies)
     ys = yt.streams.get_lowest_resolution()
     tmp_file = ys.download(output_path=".", filename="tmp_GFyAjmqpbCI.mp4", max_retries=3, timeout=10)
     remove(tmp_file)
