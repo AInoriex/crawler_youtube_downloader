@@ -39,7 +39,7 @@ def yt_dlp_init(v:Video, save_path:str, video_ext:str="mp4", audio_ext:str="m4a"
     # See details at https://github.com/yt-dlp/yt-dlp/blob/master/yt_dlp/YoutubeDL.py
     DEBUG_MODE = getenv("DEBUG", False) == "True"
     if getenv("CRAWLER_SWITCH_ACCOUNT_ON", False) == "True":
-        from handler.youtube_accout import OAUTH2_PATH
+        from handler.youtube_account import OAUTH2_PATH
     else:
         OAUTH2_PATH = getenv("YTB_OAUTH2_PATH") if getenv("YTB_OAUTH2_PATH") else ""
     if OAUTH2_PATH:
@@ -193,8 +193,8 @@ def get_ytb_playlist_title(playlist_url:str, ydl_opts={}):
         print(f"get_ytb_playlist_title > Playlist Title: {title}")
     return title
 
-# def download_by_watch_url(watch_url, save_path=getenv("DOWNLOAD_PATH"), retry=int(getenv("YTB_MAX_RETRY"))):
-def download_by_watch_url(v:Video, save_path:str, retry=int(getenv("YTB_MAX_RETRY"))):
+# def download_by_watch_url(watch_url, save_path=getenv("DOWNLOAD_PATH"), retry=int(getenv("LIMIT_MAX_RETRY"))):
+def download_by_watch_url(v:Video, save_path:str, retry=int(getenv("LIMIT_MAX_RETRY"))):
     ''' 下载油管单个视频 https://www.youtube.com/watch?v=xxx '''
     if retry <= 0:
         raise Exception(f"Yt-dlp > download_by_watch_url retry failed")
@@ -272,7 +272,7 @@ def handle_account_banned_error(e:Exception):
         raise BrokenPipeError(f"账号失效, {e.msg}")
 
 
-def download_by_playlist_url(playlist_url:str, save_path:str, ydl_opts={}, max_limit=0, retry=int(getenv("YTB_MAX_RETRY")), fail_limit=int(getenv("LIMIT_FAIL_COUNT"))):
+def download_by_playlist_url(playlist_url:str, save_path:str, ydl_opts={}, max_limit=0, retry=int(getenv("LIMIT_MAX_RETRY")), fail_limit=int(getenv("LIMIT_FAIL_COUNT"))):
     ''' 下载油管播放列表playlist到本地 https://www.youtube.com/playlist?list=xxx '''
     # 手动获取playlist title
     playlist_title = get_ytb_playlist_title(playlist_url)  # 获取播放列表标题
