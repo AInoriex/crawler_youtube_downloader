@@ -23,7 +23,7 @@ ytapi_key_list = [
     "aa8315de9fmsh2ad3e674a998b91p1195abjsna48469488c83",
 ]
 
-def ytapi_handler_step1(vid:str, cgeo:str="RU")->dict:
+def ytapi_handler_step1(vid:str, cgeo:str="US")->dict:
     url = "https://yt-api.p.rapidapi.com/dl"
     querystring = {
         "id": vid,
@@ -45,7 +45,7 @@ def ytapi_handler_step1(vid:str, cgeo:str="RU")->dict:
 def ytapi_handler_step2(json_data:dict)->tuple[str, str]:
     """ 解析响应提取下载链接 """
     qualityLabel_list = ["1080p", "720p", "480p", "360p", "240p", "144p"]
-    audioQuality_list = ["AUDIO_QUALITY_MEDIUM", "AUDIO_QUALITY_LOW", "AUDIO_QUALITY_ULTRALOW"]
+    audioQuality_list = ["AUDIO_QUALITY_HIGH", "AUDIO_QUALITY_MEDIUM", "AUDIO_QUALITY_LOW", "AUDIO_QUALITY_ULTRALOW"]
     video_url, audio_url = "", ""
     formats = json_data.get("adaptiveFormats", [])
     for qualityLabel in qualityLabel_list:
@@ -133,7 +133,12 @@ def ytapi_handler_step4(video_path:str, audio_path:str, dst_path:str)->str:
         logger.error(f"ytapi_handler_step4 error, {video_path} + {audio_path} => {dst_path}, error:{e}")
         raise e
 
-def ytapi_handler(video_id:str, save_path:str, cgeo:str="US", retry:int=3)->str:
+def ytapi_handler(
+        video_id:str,
+        save_path:str,
+        cgeo:str="US",
+        retry:int=int(getenv("LIMIT_MAX_RETRY", 3))
+    )->str:
     """
     Extract download url from radpidapi of yt-api.
 
