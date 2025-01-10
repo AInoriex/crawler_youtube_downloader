@@ -89,32 +89,15 @@ def download_with_yt_dlp(video:Video, save_path:str):
     return download_path
 
 def download_with_tubedown(video:Video, save_path:str):
-    # 1 解析真实视频url
-    from handler.youtube import get_youtube_vid, get_mime_type
-    from handler.tubedown import extract_download_url, download_resource
-    down_info = extract_download_url(video.source_link)
-    video_url = down_info.get("video_info", {}).get("url")
-    audio_url = down_info.get("audio_info", {}).get("url")
-    logger.info(f"视频下载地址：{video_url}")
-    logger.info(f"音频下载地址：{audio_url}")
-
-    # 2 合并音视频资源(根据实际接口返回结果判断)
-    # TODO
-
-    # 3 下载视频资源
-    filename = path.join(save_path, f"{get_youtube_vid(video.source_link)}.{get_mime_type(video_url, default='mp4')}")
-    download_path = download_resource(
-        url = video_url,
-        filename = filename,
-        proxies = {'http': getenv("HTTP_PROXY"),'https': getenv("HTTP_PROXY")} if getenv("HTTP_PROXY", "") != "" else None
-    )
+    from handler.tubedown import tubedown_handler
+    download_path = tubedown_handler(video, save_path)
     if download_path == "":
         raise ValueError("download_with_tubedown get empty download file")
     return download_path
 
 def download_with_rapidapi(video:Video, save_path:str):
     from handler.youtube import get_youtube_vid, get_mime_type
-    from handler.tubedown import download_resource
+    from utils.request import download_resource
     # 1 解析真实视频url
     from handler.rapidapi import extract_download_url_ytjar
     dst_url = extract_download_url_ytjar(video_id=get_youtube_vid(video.source_link))
@@ -147,7 +130,17 @@ def download_with_pytubefix_audio(video:Video, save_path:str):
     from handler.pytubefix import pytubefix_audio_handler
     download_path = pytubefix_audio_handler(video, save_path)
     if not download_path:
-        raise ValueError("download_with_pytubefix get empty download file")
+        raise ValueError("download_with_pytubefix_audio get empty download file")
+    return download_path
+
+def download_with_pytubefix_video(video:Video, save_path:str):
+    # from handler.pytubefix import pytubefix_video_handler, pytubefix_audio_handler
+    # video_path = pytubefix_video_handler(video, save_path)
+    # audio_path = pytubefix_audio_handler(video, save_path)
+    # download_path = pytubefix_video_handler(video, save_path)
+    download_path = ""
+    if not download_path:
+        raise ValueError("download_with_pytubefix_video get empty download file")
     return download_path
 
 def youtube_download_handler(video:Video, save_path):
@@ -166,6 +159,9 @@ def youtube_download_handler(video:Video, save_path):
     elif getenv("YTB_DOWNLOAD_MODE", "") == "pytubefix_audio":
         logger.info("youtube_download_handler > 当前下载模式: pytubefix_audio")
         return download_with_pytubefix_audio(video, save_path)
+    elif getenv("YTB_DOWNLOAD_MODE", "") == "pytubefix_video":
+        logger.info("youtube_download_handler > 当前下载模式: pytubefix_video")
+        return download_with_pytubefix_video(video, save_path)
     else:
         logger.warning("youtube_download_handler > 未配置下载模式, 默认: yt_dlp")
         return download_with_yt_dlp(video, save_path)

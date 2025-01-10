@@ -1,72 +1,68 @@
-# https://tubedown.cn/youtube
 from time import sleep, time
-from os import getenv
+from os import getenv, path, remove
 import requests
 from random import choice, randint
-# from loguru import logger
+from database.crawler_download_info import Video
+from handler.youtube import get_youtube_vid, get_mime_type
 from utils.logger import logger
+from utils.request import get_random_ua, download_resource
+from utils.ffmpeg import merge_video_with_audio
 
-def get_random_ua():
-    from fake_useragent import UserAgent
-    os_list = ["Windows", "macOS", "Linux"]
-    operate_sys = choice(os_list)
-    # print(f"随机os > {operate_sys}")
-    browsers_list = ['safari', 'firefox']
-    if operate_sys == "Windows":
-        browsers_list.append("edge")
-    if operate_sys != 'Linux':
-        browsers_list.append("chrome")
-    br = choice(browsers_list)
-    # print(f"随机browser > {br}")
-    ua = UserAgent(browsers=[br.lower()], os=[operate_sys.lower()])
-    user_agent = ua.random
-    # print(f"随机生成的User-Agent: {user_agent}")
-    return {
-        "os": operate_sys,
-        "browser": br,
-        "ua": user_agent
-    }
+# @Desc:    借助tubedown.cn处理youtube视频
+# @Refer:   https://tubedown.cn/youtube
+# @Limit:   仅限于国内访问
+# @Update:  2025.01.11 11:01
 
-def extract_download_url(youtube_url, retry=3):
-    ua = get_random_ua()
-    headers = {
-        'accept': 'application/json',
-        'accept-language': 'zh-CN,zh;q=0.9,en-GB;q=0.8,en;q=0.7,en-US;q=0.6',
-        'cache-control': 'no-cache',
-        'content-type': 'application/json',
-        'origin': 'https://tubedown.cn',
-        'pragma': 'no-cache',
-        'priority': 'u=1, i',
-        'referer': 'https://tubedown.cn/youtube',
-        'sec-ch-ua': '"Microsoft Edge";v="129", "Not=A?Brand";v="8", "Chromium";v="129"',
-        'sec-ch-ua-mobile': '?0',
-        'sec-fetch-dest': 'empty',
-        'sec-fetch-mode': 'cors',
-        'sec-fetch-site': 'same-origin',
-        'sec-ch-ua-platform': ua.get('os'),
-        'user-agent': ua.get('ua'),
-        # 'sec-ch-ua-platform': '"Windows"',
-        # 'user-agent': f'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/129.0.0.0 Safari/537.36 Edg/129.0.0.0',
-    }
+_PROXIES = {'http': getenv("HTTP_PROXY"),'https': getenv("HTTP_PROXY")} if getenv("HTTP_PROXY", "") != "" else None
 
-    json_data = {
-        'url': youtube_url,
-    }
+def request_tubedown_api(youtube_url:str)->requests.Response:
     try:
+        ua = get_random_ua()
+        headers = {
+            'accept': 'application/json',
+            'accept-language': 'zh-CN,zh;q=0.9,en-GB;q=0.8,en;q=0.7,en-US;q=0.6',
+            'cache-control': 'no-cache',
+            'content-type': 'application/json',
+            'origin': 'https://tubedown.cn',
+            'pragma': 'no-cache',
+            'priority': 'u=1, i',
+            'referer': 'https://tubedown.cn/youtube',
+            'sec-ch-ua': '"Microsoft Edge";v="129", "Not=A?Brand";v="8", "Chromium";v="129"',
+            'sec-ch-ua-mobile': '?0',
+            'sec-fetch-dest': 'empty',
+            'sec-fetch-mode': 'cors',
+            'sec-fetch-site': 'same-origin',
+            'sec-ch-ua-platform': ua.get('os'),
+            'user-agent': ua.get('ua'),
+            # 'sec-ch-ua-platform': '"Windows"',
+            # 'user-agent': f'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/129.0.0.0 Safari/537.36 Edg/129.0.0.0',
+        }
+        json_data = {
+            'url': youtube_url,
+        }
         response = requests.post('https://tubedown.cn/api/youtube', headers=headers, json=json_data, timeout=12)
         if response.status_code != 200:
-            raise AssertionError(f"tubedown request failed, {response.status_code} | {str(response.content, encoding='utf-8')}")
-
-        video_info = {}
-        audio_info = {}
-        audio_info_list = []
-        highest_tbr = 0
+            raise AssertionError(f"request_tubedown_api status_code not 200, {response.status_code} | {str(response.content, encoding='utf-8')}")
         json_data = response.json()
         response_code = json_data.get("code", -1)
         if response_code != 0:
-            raise ValueError(f"tubedown request failed, {response_code} | {json_data.get('message', 'unknown error')}")
+            raise ValueError(f"request_tubedown_api request failed, {response_code} | {str(response.text(), encoding='utf-8')}")
+        return response
+    except Exception as e:
+        logger.error(f"request_tubedown_api > error:{e}")
+        raise e
 
-        # 解析data数据
+def extract_video_url(response:requests.Response)->str:
+    """
+    根据tubedown.cn的API响应，提取视频下载地址url
+
+    :param response: tubedown.cn的API响应
+    :return: 视频下载地址url
+    :raises ValueError: 如果解析结果为空
+    """
+    highest_tbr = 0 # 记录最高清晰度
+    try:
+        json_data = response.json()
         formats = json_data.get("data", {}).get("formats", [])
         for resolution in ["(1080p)", "(720p)", "(480p)", "(360p)", "(240p)", "(144p)"]:
             for fmt in formats:
@@ -77,10 +73,33 @@ def extract_download_url(youtube_url, retry=3):
                         highest_tbr = tbr_value
             if video_info:
                 break
+        # 检查提取结果
+        if not video_info:
+            raise ValueError("extract_video_url get empty video info")
+        video_url = video_info.get("url")
+        if not video_url:
+            raise ValueError("extract_video_url get empty video url")
+        logger.debug(f"extract_video_url > video_url:{video_url}")
+        return video_url
+    except Exception as e:
+        logger.error(f"extract_video_url > error:{e}")
+        raise e
 
+def extract_audio_url(response:requests.Response)->str:
+    """
+    根据tubedown.cn的API响应，提取音频频下载地址url
+
+    :param response: tubedown.cn的API响应
+    :return: 音频下载地址url
+    :raises ValueError: 如果解析结果为空
+    """
+    audio_info_list = [] # 记录所有音频格式
+    try:
+        json_data = response.json()
+        formats = json_data.get("data", {}).get("formats", [])
         for fmt in formats:
             if fmt.get('protocol', "") == "https" and "audio only" in fmt.get('format', ""):
-                audio_info_list.append(fmt)  # 收集所有音频格式
+                audio_info_list.append(fmt)
         for audio_quality in ["medium, DRC", "medium", "low, DRC", "low"]:
             for audio_fmt in audio_info_list:
                 if audio_quality in audio_fmt.get("format", ""):
@@ -88,85 +107,58 @@ def extract_download_url(youtube_url, retry=3):
                     break
             if audio_info:
                 break
-
-        if not video_info:
-        # if not (video_info or audio_info):
-            raise ValueError("extract_download_url get empty data info")
+        # 检查提取结果
+        if not audio_info:
+            raise ValueError("extract_audio_url get empty video info")
+        audio_url = audio_info.get("url")
+        if not audio_url:
+            raise ValueError("extract_audio_url get empty video url")
+        logger.debug(f"extract_audio_url > audio_url:{audio_url}")
+        return audio_url
     except Exception as e:
-        logger.error(f"Error occurred while processing formats: {e}", exc_info=True)
+        logger.error(f"extract_audio_url > error:{e}")
+        raise e
+
+def tubedown_handler(video:Video, save_path:str, retry:int=int(getenv("LIMIT_MAX_RETRY", 3)))->str:
+    if video.source_link == "":
+        raise ValueError("tubedown_handler get empty source link")
+    try:
+        # 请求API提取信息
+        response = request_tubedown_api(video.source_link)
+        youtube_vid = get_youtube_vid(video.source_link)
+
+        # 下载视频资源
+        video_url = extract_video_url(response)
+        video_file = path.join(save_path, f"{youtube_vid}.video.{get_mime_type(video_url, default='mp4')}")
+        if path.exists(video_file):
+            logger.warning(f"tubedown_handler > video file already exists, skip download, video_file:{video_file}")
+        else:
+            video_file = download_resource(url=video_url, filename=video_file, proxies=_PROXIES)
+
+        # 下载音频资源
+        audio_url = extract_audio_url(response)
+        # audio_file = path.join(save_path, f"{youtube_vid}.audio.{get_mime_type(video_url, default='mp3')}")
+        audio_file = path.join(save_path, f"{youtube_vid}.audio.m4a")
+        if path.exists(audio_file):
+            logger.warning(f"tubedown_handler > audio file already exists, skip download, audio_file:{audio_file}")
+        else:
+            audio_file = download_resource(url=audio_url, filename=audio_file, proxies=_PROXIES)
+
+        # 合并音视频资源
+        # video_file = r"download\test\6gk91dpHNo8.video.mp4"
+        # audio_file = r"download\test\6gk91dpHNo8.video.m4a"
+        dst_filename = path.join(save_path, f"{youtube_vid}.mp4")
+        dst_path = merge_video_with_audio(video_file, audio_file, dst_filename)
+
+        # 清理临时文件
+        remove(video_file)
+        remove(audio_file)
+
+        return dst_path
+    except Exception as e:
+        logger.error(f"tubedown_handler > error:{e}, retry:{retry}")
         if retry > 0:
-            sleep(randint(2,5))
-            extract_download_url(youtube_url=youtube_url, retry=retry-1)
+            sleep(randint(1, 3))
+            return tubedown_handler(video=video, save_path=save_path, retry=retry-1)
         else:
             raise e
-    else:
-        return {"video_info": video_info, "audio_info": audio_info}
-
-def download_resource(url:str, filename:str, proxies={}):
-    """
-    使用代理服务器从url处下载文件到本地的filename
-
-    :param url: 要下载的文件的url
-    :param filename: 保存到本地的文件名
-    :return: None
-    """
-    import urllib.request as request
-    print(f"download_file > 参数：{url} -- {filename}")
-    ua = get_random_ua()
-    headers = [
-        ('accept-language','zh-CN,zh;q=0.9,en-GB;q=0.8,en;q=0.7,en-US;q=0.6'),
-        ('cache-control','no-cache'),
-        ('sec-ch-ua','"Microsoft Edge";v="129", "Not=A?Brand";v="8", "Chromium";v="129"'),
-        ('sec-ch-ua-mobile','?0'),
-        ('sec-fetch-dest','empty'),
-        ('sec-fetch-mode','cors'),
-        ('sec-fetch-site','same-origin'),
-        ('sec-ch-ua-platform',ua.get('os')),
-        ('user-agent',ua.get('ua')),
-    ]
-
-    def reporthook(block_num, block_size, total_size):
-        if block_num // 2 == 0:
-            return
-        if total_size != -1:
-            print(f"\r文件大小：{total_size/1048576:.2f}MB | 下载进度：{block_num*block_size/total_size*100:.2f}%", end='')
-        
-    try:
-        # create the object, assign it to a variable
-        if proxies:
-            proxy_handler = request.ProxyHandler(proxies)
-        else:
-            proxy_handler = request.ProxyHandler()
-
-        # construct a new opener using your proxy settings
-        opener = request.build_opener(proxy_handler)
-        opener.addheaders = headers
-
-        # install the openen on the module-level
-        request.install_opener(opener)
-
-        request.urlretrieve(url, filename, reporthook)
-    except Exception as e:
-        print(f"\ndownload_file > 下载文件时发生错误：{e}")
-        raise e
-    else:
-        print(f"\ndownload_file > 文件已下载到：{filename}")
-        return filename
-
-if __name__ == '__main__':
-    st = time()
-    url = 'https://www.youtube.com/watch?v=6gk91dpHNo8'
-    try:
-        down_info = extract_download_url(url)
-    except Exception as e:
-        print(e)
-    else:
-        video_url = down_info.get("video_info", {}).get("url")
-        audio_url = down_info.get("audio_info", {}).get("url")
-        logger.info(f"视频下载地址：{video_url}")
-        logger.info(f"音频下载地址：{audio_url}")
-        logger.info(f"用时：{round(time()-st, 2)} seconds")
-
-    # video_url = """https://rr5---sn-i3belnl6.googlevideo.com/videoplayback?expire=1730743103&ei=37YoZ-7pE6mL1d8PpuSSoAg&ip=206.237.16.169&id=o-AMqSU8CgVxIH7TiXp-ejgwYjc5egEGRri94MHuP6JL5a&itag=137&source=youtube&requiressl=yes&xpc=EgVo2aDSNQ%3D%3D&met=1730721503%2C&mh=J1&mm=31%2C29&mn=sn-i3belnl6%2Csn-i3b7knlk&ms=au%2Crdu&mv=u&mvi=5&pl=23&rms=au%2Cau&vprv=1&svpuc=1&mime=video%2Fmp4&rqh=1&gir=yes&clen=111254201&dur=952.117&lmt=1722468130058420&mt=1730720796&fvip=5&keepalive=yes&fexp=51312688%2C51326932&c=IOS&txp=5532434&sparams=expire%2Cei%2Cip%2Cid%2Citag%2Csource%2Crequiressl%2Cxpc%2Cvprv%2Csvpuc%2Cmime%2Crqh%2Cgir%2Cclen%2Cdur%2Clmt&sig=AJfQdSswRgIhAI2AeKv9gk8J0nwA8hVeQWqX_2Eb2T6jn9IlXkZG-RGPAiEAjQuNKvxz2EQxFyn-hGc1UhIh1pDDDmMT_HcJM96dM9k%3D&lsparams=met%2Cmh%2Cmm%2Cmn%2Cms%2Cmv%2Cmvi%2Cpl%2Crms&lsig=ACJ0pHgwRQIhAPB6DzETifN5V5xom8i4C4xYUZisYzVtRy40IiwvejNlAiBJLYvDAudGcsmbbysV_kpNEbfAmf8I5LxP6rISGfcDBw%3D%3D"""
-    # get_url_resource(video_url, r"./download/test.mp4")
-    download_resource(video_url, r"./download/test.mp4")
