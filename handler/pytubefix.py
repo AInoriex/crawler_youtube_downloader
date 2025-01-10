@@ -77,7 +77,14 @@ def pytubefix_login_handler()->YoutubeAccout:
             \n\t告警时间: {get_now_time_string()}"
         alarm_lark_text(webhook=getenv("LARK_INFO_WEBHOOK"), text=notice_text)
 
-def pytubefix_audio_handler(video:Video, save_path:str, quality:str="best")->str|None:
+def init_pytubefix_client(youtube_url:str, proxies=_PROXIES, token_file:str=None)->YouTube:
+    yt = YouTube(youtube_url, on_progress_callback=on_progress, proxies=proxies, allow_oauth_cache=True, use_oauth=True, token_file=token_file)
+    if not yt:
+        raise Exception(f"youtube url:{youtube_url} init pytubefix.YouTube failed")
+    logger.debug(f"init_pytubefix_client > get {youtube_url} success")
+    return yt
+
+def pytubefix_audio_handler(yt:YouTube, video:Video, save_path:str, quality:str="best")->str|None:
     """
     pytubefix 下载音频
     :param video: Video instance
@@ -91,9 +98,9 @@ def pytubefix_audio_handler(video:Video, save_path:str, quality:str="best")->str
         logger.error(f"pytubefix_audio_handler > video source link is empty")
         return None
 
-    yt = YouTube(video.source_link, on_progress_callback=on_progress, proxies=_PROXIES, allow_oauth_cache=True, use_oauth=True)
+    # yt = YouTube(video.source_link, on_progress_callback=on_progress, proxies=_PROXIES, allow_oauth_cache=True, use_oauth=True)
     # yt = YouTube(url, on_progress_callback=on_progress, proxies=proxies, use_oauth=True, token_file=r"cache\pytubefix_token\tokens.json")
-    logger.info(f"pytubefix_audio_handler > get the video {yt.title} from {yt.channel_url}")
+    # logger.info(f"pytubefix_audio_handler > get the video {yt.title} from {yt.channel_url}")
 
     # 按照 itag 获取 audio
     format_type = "mp3"
@@ -125,10 +132,10 @@ def pytubefix_audio_handler(video:Video, save_path:str, quality:str="best")->str
     download_path = ys.download(output_path=save_path, filename=filename, skip_existing=True, max_retries=3, timeout=30)
     if not download_path:
         raise ValueError(f"pytubefix_audio_handler > download the video {video.source_link} fail")
-    logger.debug(f"pytubefix_audio_handler > 文件已下载到:{download_path}")
+    logger.debug(f"pytubefix_audio_handler > 音频已下载到:{download_path}")
     return download_path
 
-def pytubefix_raw_video_handler(video:Video, save_path:str, quality:str="best")->str|None:
+def pytubefix_raw_video_handler(yt:YouTube, video:Video, save_path:str, quality:str="best")->str|None:
     """
     pytubefix 下载视频
     :param video: Video instance
@@ -142,47 +149,82 @@ def pytubefix_raw_video_handler(video:Video, save_path:str, quality:str="best")-
         logger.error(f"pytubefix_raw_video_handler > video source link is empty")
         return None
 
-    yt = YouTube(video.source_link, on_progress_callback=on_progress, proxies=_PROXIES, use_oauth=True, allow_oauth_cache=True)
+    # yt = YouTube(video.source_link, on_progress_callback=on_progress, proxies=_PROXIES, use_oauth=True, allow_oauth_cache=True)
     # yt = YouTube(url, on_progress_callback=on_progress, proxies=proxies, use_oauth=True, token_file=r"cache\pytubefix_token\tokens.json")
-    logger.info(f"pytubefix_raw_video_handler > get the video {yt.title} from {yt.channel_url}")
+    # logger.info(f"pytubefix_raw_video_handler > get the video {yt.title} from {yt.channel_url}")
 
     # 按照 itag 获取 video
     format_type = "mp4"
     
     # Itag details according to https://web.archive.org/web/20200516070826/https://gist.github.com/Marco01809/34d47c65b1d28829bb17c24c04a0096f
+    # Default: 1080p > 720p > 480p > 360p > 240p > 144p
     # ::return:: <stream> | None
     ys = None
-    if yt.streams.get_by_itag(251):
-        logger.debug("pytubefix_raw_video_handler > get WebM.Opus ~160 Kbps success")
-        format_type = "opus"
-        ys = yt.streams.get_by_itag(251)
-    elif yt.streams.get_by_itag(250):
-        logger.debug("pytubefix_raw_video_handler > get WebM.Opus ~70 Kbps success")
-        format_type = "opus"
-        ys = yt.streams.get_by_itag(250) 
-    elif yt.streams.get_by_itag(249):
-        logger.debug("pytubefix_raw_video_handler > get WebM.Opus ~50 Kbps success")
-        format_type = "opus"
-        ys = yt.streams.get_by_itag(249) 
-    elif yt.streams.get_by_itag(140):
-        logger.debug("pytubefix_raw_video_handler > get MP4.AAC 128 Kbps success")
-        format_type = "m4a"
-        ys = yt.streams.get_by_itag(140) 
+    # 1080p
+    if yt.streams.get_by_itag(399):
+        logger.debug(f"pytubefix_raw_video_handler > {video.vid} get 1080p AV1 HFR success")
+        ys = yt.streams.get_by_itag(399)
+    elif yt.streams.get_by_itag(248):
+        logger.debug(f"pytubefix_raw_video_handler > {video.vid} get 1080p VP9 success")
+        ys = yt.streams.get_by_itag(248) 
+    elif yt.streams.get_by_itag(137):
+        logger.debug(f"pytubefix_raw_video_handler > {video.vid} get 1080p H.264 success")
+        ys = yt.streams.get_by_itag(137)
+    # 720p
+    elif yt.streams.get_by_itag(398):
+        logger.debug(f"pytubefix_raw_video_handler > {video.vid} get 720p AV1 HFR success")
+        ys = yt.streams.get_by_itag(398)
+    elif yt.streams.get_by_itag(247):
+        logger.debug(f"pytubefix_raw_video_handler > {video.vid} get 720p VP9 success")
+        ys = yt.streams.get_by_itag(247) 
+    elif yt.streams.get_by_itag(136):
+        logger.debug(f"pytubefix_raw_video_handler > {video.vid} get 720p H.264 success")
+        ys = yt.streams.get_by_itag(136)
+    # 480p
+    elif yt.streams.get_by_itag(397):
+        logger.debug(f"pytubefix_raw_video_handler > {video.vid} get 480p AV1 success")
+        ys = yt.streams.get_by_itag(397)
+    elif yt.streams.get_by_itag(135):
+        logger.debug(f"pytubefix_raw_video_handler > {video.vid} get 480p H.264 success")
+        ys = yt.streams.get_by_itag(135)
+    # 360p
+    elif yt.streams.get_by_itag(396):
+        logger.debug(f"pytubefix_raw_video_handler > {video.vid} get 360p AV1 success")
+        ys = yt.streams.get_by_itag(396)
+    elif yt.streams.get_by_itag(134):
+        logger.debug(f"pytubefix_raw_video_handler > {video.vid} get 360p H.264 success")
+        ys = yt.streams.get_by_itag(134)
+    # 240p
+    elif yt.streams.get_by_itag(395):
+        logger.debug(f"pytubefix_raw_video_handler > {video.vid} get 240p AV1 success")
+        ys = yt.streams.get_by_itag(395)
+    elif yt.streams.get_by_itag(133):
+        logger.debug(f"pytubefix_raw_video_handler > {video.vid} get 240p H.264 success")
+        ys = yt.streams.get_by_itag(133)
+    # 144p
+    elif yt.streams.get_by_itag(394):
+        logger.debug(f"pytubefix_raw_video_handler > {video.vid} get 144p AV1 success")
+        ys = yt.streams.get_by_itag(394)
+    elif yt.streams.get_by_itag(160):
+        logger.debug(f"pytubefix_raw_video_handler > {video.vid} get 144p H.264 success")
+        ys = yt.streams.get_by_itag(160)
+    # couldn't match video itages
     else:
-        raise Exception("pytubefix_raw_video_handler > get audio stream by get_by_itag fail")
+        raise Exception("pytubefix_raw_video_handler > get raw video stream by get_by_itag fail")
     
     # download_filepath = ys.download(output_path="download", filename_prefix="test-", skip_existing=True, max_retries=3, timeout=10)
     filename=f"{video.vid}.video.{format_type}"
     download_path = ys.download(output_path=save_path, filename=filename, skip_existing=True, max_retries=3, timeout=30)
     if not download_path:
         raise ValueError(f"pytubefix_raw_video_handler > download the video {video.source_link} fail")
-    logger.debug(f"pytubefix_raw_video_handler > 文件已下载到:{download_path}")
+    logger.debug(f"pytubefix_raw_video_handler > 视频已下载到:{download_path}")
     return download_path
 
 def pytubefix_video_handler(video:Video, save_path:str, quality:str="best")->str|None:
     from utils.ffmpeg import merge_video_with_audio
-    video_path = pytubefix_raw_video_handler(video, save_path, quality)
-    audio_path = pytubefix_audio_handler(video, save_path, quality)
+    yt = init_pytubefix_client(video.source_link)
+    video_path = pytubefix_raw_video_handler(yt, video, save_path, quality)
+    audio_path = pytubefix_audio_handler(yt, video, save_path, quality)
     dst_file = path.join(save_path, f"{get_youtube_vid(video.source_link)}.mp4")
     return merge_video_with_audio(video_path, audio_path, dst_file)
 

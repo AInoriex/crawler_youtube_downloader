@@ -127,8 +127,9 @@ def download_with_yt_api(video:Video, save_path:str):
     return download_path
 
 def download_with_pytubefix_audio(video:Video, save_path:str):
-    from handler.pytubefix import pytubefix_audio_handler
-    download_path = pytubefix_audio_handler(video, save_path)
+    from handler.pytubefix import init_pytubefix_client, pytubefix_audio_handler
+    yt = init_pytubefix_client(video.source_link)
+    download_path = pytubefix_audio_handler(yt, video, save_path)
     if not download_path:
         raise ValueError("download_with_pytubefix_audio get empty download file")
     return download_path
