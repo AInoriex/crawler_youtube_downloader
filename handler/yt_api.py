@@ -3,8 +3,9 @@ from requests import HTTPError
 from time import sleep
 from random import choice, randint
 from os import getenv, path, remove
-# from loguru import logger
 from utils.logger import logger
+from uuid import uuid4
+from handler.youtube import get_mime_type
 
 proxies = {'http': getenv("HTTP_PROXY"),'https': getenv("HTTP_PROXY")} if getenv("HTTP_PROXY", "") != "" else {}
 
@@ -68,7 +69,7 @@ def ytapi_handler_step2(json_data:dict)->tuple[str, str]:
 def ytapi_download(url:str, filename:str, retry=3)->str:
     if url == "" or filename == "":
         raise ValueError("ytapi_download url or filename is empty")
-    from handler.tubedown import download_resource
+    from utils.request import download_resource
     try:
         download_path = download_resource(url, filename, proxies=proxies)
         return download_path
@@ -82,8 +83,6 @@ def ytapi_download(url:str, filename:str, retry=3)->str:
 
 def ytapi_handler_step3(video_url:str, audio_url:str, save_path:str)->tuple[str, str]:
     """ 下载视频 """
-    from uuid import uuid4
-    from handler.youtube import get_mime_type
     if video_url == "" or audio_url == "":
         raise ValueError(f"ytapi_handler_step3 params invalid, video_url:{video_url}, audio_url:{audio_url}")
     video_path, audio_path = "", ""
@@ -110,7 +109,6 @@ def ytapi_handler_step3(video_url:str, audio_url:str, save_path:str)->tuple[str,
 def ytapi_handler_step4(video_path:str, audio_path:str, dst_path:str)->str:
     """ 合并视频和音频 """
     import subprocess
-    from uuid import uuid4
     if video_path == "" or audio_path == "":
         raise ValueError(f"ytapi_handler_step4 params invalid, video_path:{video_path}, audio_path:{audio_path}")
     # 构建ffmpeg命令
