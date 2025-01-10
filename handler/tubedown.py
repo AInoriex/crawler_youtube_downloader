@@ -60,6 +60,7 @@ def extract_video_url(response:requests.Response)->str:
     :return: 视频下载地址url
     :raises ValueError: 如果解析结果为空
     """
+    video_info = {}
     highest_tbr = 0 # 记录最高清晰度
     try:
         json_data = response.json()
@@ -93,6 +94,7 @@ def extract_audio_url(response:requests.Response)->str:
     :return: 音频下载地址url
     :raises ValueError: 如果解析结果为空
     """
+    audio_info = {}
     audio_info_list = [] # 记录所有音频格式
     try:
         json_data = response.json()
