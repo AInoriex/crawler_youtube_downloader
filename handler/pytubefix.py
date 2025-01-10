@@ -222,10 +222,14 @@ def pytubefix_raw_video_handler(yt:YouTube, video:Video, save_path:str, quality:
 
 def pytubefix_video_handler(video:Video, save_path:str, quality:str="best")->str|None:
     from utils.ffmpeg import merge_video_with_audio
+    youtube_id = get_youtube_vid(video.source_link)
+    dst_file = path.join(save_path, f"{youtube_id}.mp4")
+    if path.exists(dst_file):
+        logger.warning(f"pytubefix_video_handler > {dst_file} exists, skip download.")
+        return dst_file
     yt = init_pytubefix_client(video.source_link)
     video_path = pytubefix_raw_video_handler(yt, video, save_path, quality)
     audio_path = pytubefix_audio_handler(yt, video, save_path, quality)
-    dst_file = path.join(save_path, f"{get_youtube_vid(video.source_link)}.mp4")
     return merge_video_with_audio(video_path, audio_path, dst_file)
 
 def reset_pytubefix_oauth_token():
