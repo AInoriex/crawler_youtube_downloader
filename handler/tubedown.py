@@ -47,6 +47,7 @@ def request_tubedown_api(youtube_url:str)->requests.Response:
         response_code = json_data.get("code", -1)
         if response_code != 0:
             raise ValueError(f"request_tubedown_api request failed, {response_code} | {str(response.text(), encoding='utf-8')}")
+        logger.debug(f"request_tubedown_api > request {youtube_url} success")
         return response
     except Exception as e:
         logger.error(f"request_tubedown_api > error:{e}")
@@ -65,6 +66,7 @@ def extract_video_url(response:requests.Response)->str:
     try:
         json_data = response.json()
         formats = json_data.get("data", {}).get("formats", [])
+        logger.debug(f"extract_video_url > length of formats:{len(formats)}")
         for resolution in ["(1080p)", "(720p)", "(480p)", "(360p)", "(240p)", "(144p)"]:
             for fmt in formats:
                 if resolution in fmt.get('format', "") and fmt.get('protocol', "") == "https":
@@ -99,6 +101,7 @@ def extract_audio_url(response:requests.Response)->str:
     try:
         json_data = response.json()
         formats = json_data.get("data", {}).get("formats", [])
+        logger.debug(f"extract_audio_url > length of formats:{len(formats)}")
         for fmt in formats:
             if fmt.get('protocol', "") == "https" and "audio only" in fmt.get('format', ""):
                 audio_info_list.append(fmt)
