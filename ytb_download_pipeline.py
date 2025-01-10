@@ -134,10 +134,8 @@ def download_with_pytubefix_audio(video:Video, save_path:str):
     return download_path
 
 def download_with_pytubefix_video(video:Video, save_path:str):
-    # from handler.pytubefix import pytubefix_video_handler, pytubefix_audio_handler
-    # video_path = pytubefix_video_handler(video, save_path)
-    # audio_path = pytubefix_audio_handler(video, save_path)
-    # download_path = pytubefix_video_handler(video, save_path)
+    from handler.pytubefix import pytubefix_video_handler
+    download_path = pytubefix_video_handler(video, save_path)
     download_path = ""
     if not download_path:
         raise ValueError("download_with_pytubefix_video get empty download file")
