@@ -11,6 +11,7 @@ from pytubefix.cli import on_progress
 from pytubefix.helpers import reset_cache
 
 _PROXIES = {'http': getenv("HTTP_PROXY"),'https': getenv("HTTP_PROXY")} if getenv("HTTP_PROXY", "") != "" else None
+_OAUTH2_TOKEN_FILE = getenv("YTB_OAUTH2_PATH") if getenv("YTB_OAUTH2_PATH") != '' else None
 
 def pytubefix_login_handler()->YoutubeAccout:
     """
@@ -77,8 +78,9 @@ def pytubefix_login_handler()->YoutubeAccout:
             \n\t告警时间: {get_now_time_string()}"
         alarm_lark_text(webhook=getenv("LARK_INFO_WEBHOOK"), text=notice_text)
 
-def init_pytubefix_client(youtube_url:str, proxies=_PROXIES, token_file:str=None)->YouTube:
-    yt = YouTube(youtube_url, on_progress_callback=on_progress, proxies=proxies, allow_oauth_cache=True, use_oauth=True, token_file=token_file)
+def init_pytubefix_client(youtube_url:str, proxies:dict=None, token_file:str=None)->YouTube:
+    logger.debug(f"init_pytubefix_client > 当前代理：{proxies} 当前token文件：{token_file}")
+    yt = YouTube(youtube_url, on_progress_callback=on_progress, use_oauth=True, allow_oauth_cache=True, proxies=proxies, token_file=token_file)
     if not yt:
         raise Exception(f"youtube url:{youtube_url} init pytubefix.YouTube failed")
     logger.debug(f"init_pytubefix_client > get {youtube_url} success")
@@ -227,19 +229,19 @@ def pytubefix_video_handler(video:Video, save_path:str, quality:str="best")->str
     if path.exists(dst_file):
         logger.warning(f"pytubefix_video_handler > {dst_file} exists, skip download.")
         return dst_file
-    yt = init_pytubefix_client(video.source_link)
+    yt = init_pytubefix_client(video.source_link, proxies=_PROXIES, token_file=_OAUTH2_TOKEN_FILE)
     video_path = pytubefix_raw_video_handler(yt, video, save_path, quality)
     audio_path = pytubefix_audio_handler(yt, video, save_path, quality)
     return merge_video_with_audio(video_path, audio_path, dst_file)
 
-def reset_pytubefix_oauth_token():
+def check_pytubefix_oauth_token():
     # 清理旧token
     # reset_cache()
 
     # 初始化新token
     test_url = "https://www.youtube.com/watch?v=GFyAjmqpbCI"
-    yt = YouTube(test_url, use_oauth=True, allow_oauth_cache=True, proxies=_PROXIES)
+    yt = init_pytubefix_client(test_url, proxies=_PROXIES, token_file=_OAUTH2_TOKEN_FILE)
     ys = yt.streams.get_lowest_resolution()
     tmp_file = ys.download(output_path=".", filename="tmp_GFyAjmqpbCI.mp4", max_retries=3, timeout=10)
     remove(tmp_file)
-    logger.debug("reset_pytubefix_oauth_token > 初始化新token完毕")
+    logger.debug("check_pytubefix_oauth_token > 初始化新token完毕")

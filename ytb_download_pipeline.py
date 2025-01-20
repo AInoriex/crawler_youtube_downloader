@@ -318,8 +318,8 @@ if __name__ == "__main__":
 
     # 初始化 pytubefix token
     if getenv("YTB_DOWNLOAD_MODE", "").startswith("pytubefix"):
-        from handler.pytubefix import reset_pytubefix_oauth_token
-        reset_pytubefix_oauth_token()
+        from handler.pytubefix import check_pytubefix_oauth_token
+        check_pytubefix_oauth_token()
 
     import multiprocessing
     # PROCESS_NUM = 1 #同时处理的进程数量
