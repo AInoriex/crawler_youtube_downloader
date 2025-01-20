@@ -95,6 +95,13 @@ def download_with_tubedown(video:Video, save_path:str):
         raise ValueError("download_with_tubedown get empty download file")
     return download_path
 
+def download_with_tubedown_audio(video:Video, save_path:str):
+    from handler.tubedown import tubedown_audio_handler
+    download_path = tubedown_audio_handler(video, save_path)
+    if download_path == "":
+        raise ValueError("download_with_tubedown_audio get empty download file")
+    return download_path
+
 def download_with_rapidapi(video:Video, save_path:str):
     from handler.youtube import get_youtube_vid, get_mime_type
     from utils.request import download_resource
@@ -145,6 +152,9 @@ def youtube_download_handler(video:Video, save_path):
     if getenv("YTB_DOWNLOAD_MODE", "") == "tubedown":
         logger.info("youtube_download_handler > 当前下载模式: tubedown")
         return download_with_tubedown(video, save_path)
+    elif getenv("YTB_DOWNLOAD_MODE", "") == "tubedown_audio":
+        logger.info("youtube_download_handler > 当前下载模式: tubedown_audio")
+        return download_with_tubedown_audio(video, save_path)
     elif getenv("YTB_DOWNLOAD_MODE", "") == "rapidapi":
         logger.info("youtube_download_handler > 当前下载模式: rapidapi")
         return download_with_rapidapi(video, save_path)

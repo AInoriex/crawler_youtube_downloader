@@ -167,3 +167,28 @@ def tubedown_handler(video:Video, save_path:str, retry:int=int(getenv("LIMIT_MAX
             return tubedown_handler(video=video, save_path=save_path, retry=retry-1)
         else:
             raise e
+
+def tubedown_audio_handler(video:Video, save_path:str, retry:int=int(getenv("LIMIT_MAX_RETRY", 3)))->str:
+    if video.source_link == "":
+        raise ValueError("tubedown_audio_handler get empty source link")
+    try:
+        # 请求API提取信息
+        response = request_tubedown_api(video.source_link)
+        youtube_vid = get_youtube_vid(video.source_link)
+
+        # 下载音频资源
+        audio_url = extract_audio_url(response)
+        # audio_file = path.join(save_path, f"{youtube_vid}.audio.{get_mime_type(video_url, default='mp3')}")
+        audio_file = path.join(save_path, f"{youtube_vid}.audio.m4a")
+        if path.exists(audio_file):
+            logger.warning(f"tubedown_audio_handler > audio file already exists, skip download, audio_file:{audio_file}")
+        else:
+            audio_file = download_resource(url=audio_url, filename=audio_file, proxies=_PROXIES)
+        return audio_file
+    except Exception as e:
+        logger.error(f"tubedown_audio_handler > error:{e}, retry:{retry}")
+        if retry > 0:
+            sleep(randint(1, 3))
+            return tubedown_audio_handler(video=video, save_path=save_path, retry=retry-1)
+        else:
+            raise e
